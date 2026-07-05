@@ -21,10 +21,9 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-function SectionLabel({ n, children }: { n: string; children: React.ReactNode }) {
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-4 mb-6">
-      <span className="font-display text-2xl text-navy/40">{n}</span>
+    <div className="flex items-center gap-4 mb-4">
       <span className="gold-rule" />
       <span className="eyebrow">{children}</span>
     </div>
