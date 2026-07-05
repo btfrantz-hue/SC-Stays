@@ -343,22 +343,22 @@ function Landing() {
               </p>
             </div>
             <div className="space-y-6">
-              <a href="https://wa.me/5511999999999" className="flex items-center gap-4 group">
+              <a href="https://wa.me/5548991822477" className="flex items-center gap-4 group">
                 <div className="w-12 h-12 rounded-full border border-gold/50 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-navy transition">
                   <Phone className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-xs tracking-[0.24em] uppercase text-gold">WhatsApp</div>
-                  <div className="text-lg">(11) 99999-9999</div>
+                  <div className="text-lg">(48) 99182-2477</div>
                 </div>
               </a>
-              <a href="https://instagram.com/scstays.collection" className="flex items-center gap-4 group">
+              <a href="https://instagram.com/scstayscollection" className="flex items-center gap-4 group">
                 <div className="w-12 h-12 rounded-full border border-gold/50 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-navy transition">
                   <Instagram className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-xs tracking-[0.24em] uppercase text-gold">Instagram</div>
-                  <div className="text-lg">@scstays.collection</div>
+                  <div className="text-lg">@scstayscollection</div>
                 </div>
               </a>
               <a href="https://www.scstays.com.br" className="flex items-center gap-4 group">
