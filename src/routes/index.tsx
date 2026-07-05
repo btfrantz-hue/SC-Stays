@@ -115,7 +115,7 @@ function Landing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="slide-frame p-10 lg:p-16 grid lg:grid-cols-12 gap-12">
             <div className="lg:col-span-5">
-              <SectionLabel n="01">O Problema</SectionLabel>
+              <SectionLabel>O Problema</SectionLabel>
               <h2 className="font-display text-4xl lg:text-5xl text-navy leading-tight">
                 Gerenciar imóveis para aluguel de curta temporada exige tempo e atenção que você não tem.
               </h2>
@@ -148,7 +148,7 @@ function Landing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="slide-frame grid lg:grid-cols-2 overflow-hidden">
             <div className="p-10 lg:p-16">
-              <SectionLabel n="02">A Solução</SectionLabel>
+              <SectionLabel>A Solução</SectionLabel>
               <h2 className="font-display text-4xl lg:text-5xl text-navy leading-tight">
                 A SC Stays cuida de tudo para você ter mais tempo, tranquilidade e rentabilidade.
               </h2>
@@ -189,7 +189,7 @@ function Landing() {
       <section id="servicos" className="py-24 lg:py-32 bg-cream-deep/40">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="slide-frame p-10 lg:p-16">
-            <SectionLabel n="03">O Que Fazemos</SectionLabel>
+            <SectionLabel>O Que Fazemos</SectionLabel>
             <h2 className="font-display text-4xl lg:text-5xl text-navy leading-tight max-w-2xl">
               Um serviço completo, dos anúncios à experiência do hóspede.
             </h2>
@@ -222,7 +222,7 @@ function Landing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="slide-frame grid lg:grid-cols-2 overflow-hidden">
             <div className="p-10 lg:p-16 order-2 lg:order-1">
-              <SectionLabel n="04">Valor para quem é dono</SectionLabel>
+              <SectionLabel>Valor para quem é dono</SectionLabel>
               <h2 className="font-display text-4xl lg:text-5xl text-navy leading-tight">
                 O que muda quando a SC Stays cuida do seu imóvel.
               </h2>
@@ -260,7 +260,7 @@ function Landing() {
       <section id="processo" className="py-24 lg:py-32 bg-cream-deep/40">
         <div className="max-w-7xl mx-auto px-6 lg:px-12">
           <div className="slide-frame p-10 lg:p-16">
-            <SectionLabel n="05">Como Funciona</SectionLabel>
+            <SectionLabel>Como Funciona</SectionLabel>
             <h2 className="font-display text-4xl lg:text-5xl text-navy leading-tight max-w-2xl">
               Um processo simples, transparente e sob medida.
             </h2>
