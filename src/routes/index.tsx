@@ -4,7 +4,7 @@ import {
   Headphones, DollarSign, BarChart3, Search, ClipboardEdit,
   Settings, Award, Instagram, Globe, Phone, ShieldCheck, Clock, Heart, CheckCircle2,
 } from "lucide-react";
-import logoAsset from "@/assets/sc-stays-logo.png.asset.json";
+import logoAsset from "@/assets/sc-stays-logo.png";
 import heroLiving from "@/assets/hero-living.jpg";
 import bedroom from "@/assets/bedroom.jpg";
 import coast from "@/assets/coast.jpg";
@@ -43,9 +43,9 @@ function Landing() {
     <div className="min-h-screen bg-cream text-ink">
       {/* NAV */}
       <header className="absolute top-0 left-0 right-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-4 flex items-center justify-between">
           <a href="#top" className="flex items-center gap-3">
-            <img src={logoAsset.url} alt="SC Stays Collection" className="h-14 w-auto" />
+            <img src={logoAsset} alt="SC Stays Collection" className="h-20 w-auto" />
           </a>
           <nav className="hidden md:flex items-center gap-8 text-sm text-navy/80">
             <a href="#problema" className="hover:text-gold transition">O Problema</a>
@@ -328,7 +328,9 @@ function Landing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-20 w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <img src={logoAsset.url} alt="SC Stays Collection" className="h-20 w-auto brightness-0 invert opacity-90" />
+            <div className="inline-block bg-cream p-4 rounded-sm">
+              <img src={logoAsset} alt="SC Stays Collection" className="h-20 w-auto" />
+            </div>
               <p className="mt-6 font-display text-2xl lg:text-3xl leading-tight">
                 Pronto para transformar seu imóvel em um ativo bem cuidado?
               </p>
