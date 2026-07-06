@@ -4,7 +4,7 @@ import {
   Headphones, DollarSign, BarChart3, Search, ClipboardEdit,
   Settings, Award, Instagram, Globe, Phone, ShieldCheck, Clock, Heart, CheckCircle2,
 } from "lucide-react";
-import logoAsset from "@/assets/sc-stays-logo.png.asset.json";
+import logoAsset from "@/assets/sc-stays-logo.png";
 import heroLiving from "@/assets/hero-living.jpg";
 import bedroom from "@/assets/bedroom.jpg";
 import coast from "@/assets/coast.jpg";
