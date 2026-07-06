@@ -67,10 +67,6 @@ function Landing() {
       <section id="top" className="relative pt-32 pb-16 lg:pt-36 lg:pb-20 min-h-screen flex items-center overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-12 gap-10 items-center w-full">
           <div className="lg:col-span-6">
-            <div className="flex items-center gap-3 mb-6">
-              <span className="gold-rule" />
-              <span className="eyebrow">Santa Catarina · Curta Temporada</span>
-            </div>
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl leading-[1.05] text-navy">
               Seu imóvel <em className="text-gold not-italic font-normal">bem cuidado</em>,
               sua renda <em className="text-gold not-italic font-normal">bem administrada</em>.
