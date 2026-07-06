@@ -328,7 +328,9 @@ function Landing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16 lg:py-20 w-full">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <img src={logoAsset} alt="SC Stays Collection" className="h-28 w-auto brightness-0 invert opacity-90" />
+            <div className="inline-block bg-cream p-4 rounded-sm">
+              <img src={logoAsset} alt="SC Stays Collection" className="h-20 w-auto" />
+            </div>
               <p className="mt-6 font-display text-2xl lg:text-3xl leading-tight">
                 Pronto para transformar seu imóvel em um ativo bem cuidado?
               </p>
