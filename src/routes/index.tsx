@@ -41,30 +41,8 @@ function IconCircle({ children }: { children: React.ReactNode }) {
 function Landing() {
   return (
     <div className="min-h-screen bg-cream text-ink">
-      {/* NAV */}
-      <header className="absolute top-0 left-0 right-0 z-20">
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-4 flex items-center justify-between">
-          <a href="#top" className="flex items-center gap-3">
-            <img src={logoAsset} alt="SC Stays Collection" className="h-20 w-auto" />
-          </a>
-          <nav className="hidden md:flex items-center gap-8 text-sm text-navy/80">
-            <a href="#problema" className="hover:text-gold transition">O Problema</a>
-            <a href="#solucao" className="hover:text-gold transition">A Solução</a>
-            <a href="#servicos" className="hover:text-gold transition">O Que Fazemos</a>
-            <a href="#processo" className="hover:text-gold transition">Como Funciona</a>
-            <a href="#contato" className="hover:text-gold transition">Contato</a>
-          </nav>
-          <a
-            href="#contato"
-            className="hidden md:inline-flex items-center px-5 py-2.5 text-xs tracking-[0.24em] uppercase bg-navy text-cream hover:bg-navy-deep transition"
-          >
-            Fale Conosco
-          </a>
-        </div>
-      </header>
-
       {/* HERO */}
-      <section id="top" className="relative pt-32 pb-16 lg:pt-36 lg:pb-20 min-h-screen flex items-center overflow-hidden">
+      <section id="top" className="relative pt-16 pb-16 lg:pt-20 lg:pb-20 min-h-screen flex items-center overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-12 gap-10 items-center w-full">
           <div className="lg:col-span-6">
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl leading-[1.05] text-navy">
