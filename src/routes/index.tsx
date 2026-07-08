@@ -46,8 +46,8 @@ function Landing() {
         <div className="max-w-7xl mx-auto px-6 lg:px-12 grid lg:grid-cols-12 gap-10 items-center w-full">
           <div className="lg:col-span-6">
             <h1 className="font-display text-4xl md:text-5xl lg:text-6xl leading-[1.05] text-navy">
-              Seu imóvel <em className="text-gold not-italic font-normal">bem cuidado</em>,
-              sua renda <em className="text-gold not-italic font-normal">bem administrada</em>.
+              Seu imóvel <span className="whitespace-nowrap"><em className="text-gold not-italic font-normal">bem cuidado</em>,</span>{" "}
+              sua renda <span className="whitespace-nowrap"><em className="text-gold not-italic font-normal">bem administrada</em>.</span>
             </h1>
             <p className="mt-6 text-base lg:text-lg text-muted-ink max-w-xl leading-relaxed">
               A SC Stays Collection cuida de tudo para você ter mais tempo, tranquilidade
