@@ -9,38 +9,81 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ParceirosRouteImport } from './routes/parceiros'
+import { Route as ImoveisRouteImport } from './routes/imoveis'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ImoveisSlugRouteImport } from './routes/imoveis.$slug'
 
+const ParceirosRoute = ParceirosRouteImport.update({
+  id: '/parceiros',
+  path: '/parceiros',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ImoveisRoute = ImoveisRouteImport.update({
+  id: '/imoveis',
+  path: '/imoveis',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ImoveisSlugRoute = ImoveisSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ImoveisRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/imoveis': typeof ImoveisRouteWithChildren
+  '/parceiros': typeof ParceirosRoute
+  '/imoveis/$slug': typeof ImoveisSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/imoveis': typeof ImoveisRouteWithChildren
+  '/parceiros': typeof ParceirosRoute
+  '/imoveis/$slug': typeof ImoveisSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/imoveis': typeof ImoveisRouteWithChildren
+  '/parceiros': typeof ParceirosRoute
+  '/imoveis/$slug': typeof ImoveisSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths: '/' | '/imoveis' | '/parceiros' | '/imoveis/$slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/imoveis' | '/parceiros' | '/imoveis/$slug'
+  id: '__root__' | '/' | '/imoveis' | '/parceiros' | '/imoveis/$slug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ImoveisRoute: typeof ImoveisRouteWithChildren
+  ParceirosRoute: typeof ParceirosRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/parceiros': {
+      id: '/parceiros'
+      path: '/parceiros'
+      fullPath: '/parceiros'
+      preLoaderRoute: typeof ParceirosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/imoveis': {
+      id: '/imoveis'
+      path: '/imoveis'
+      fullPath: '/imoveis'
+      preLoaderRoute: typeof ImoveisRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +91,31 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/imoveis/$slug': {
+      id: '/imoveis/$slug'
+      path: '/$slug'
+      fullPath: '/imoveis/$slug'
+      preLoaderRoute: typeof ImoveisSlugRouteImport
+      parentRoute: typeof ImoveisRoute
+    }
   }
 }
 
+interface ImoveisRouteChildren {
+  ImoveisSlugRoute: typeof ImoveisSlugRoute
+}
+
+const ImoveisRouteChildren: ImoveisRouteChildren = {
+  ImoveisSlugRoute: ImoveisSlugRoute,
+}
+
+const ImoveisRouteWithChildren =
+  ImoveisRoute._addFileChildren(ImoveisRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ImoveisRoute: ImoveisRouteWithChildren,
+  ParceirosRoute: ParceirosRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
