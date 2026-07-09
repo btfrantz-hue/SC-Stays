@@ -3,6 +3,7 @@ import {
   Home, Calendar, Sparkles, TrendingUp, FileText,
   Headphones, DollarSign, BarChart3, Search, ClipboardEdit,
   Settings, Award, Instagram, Globe, Phone, ShieldCheck, Clock, Heart, CheckCircle2,
+  Star, Quote,
 } from "lucide-react";
 import logoAsset from "@/assets/sc-stays-logo.png";
 import heroLiving from "@/assets/hero-living.jpg";
@@ -292,6 +293,79 @@ function Landing() {
               &ldquo;Transformamos seu imóvel em uma experiência inesquecível
               e um excelente investimento.&rdquo;
             </p>
+            <div className="slide-frame-band" />
+          </div>
+        </div>
+      </section>
+
+      {/* DEPOIMENTOS */}
+      <section id="depoimentos" className="py-16 lg:py-20 bg-cream-deep/40 min-h-screen flex items-center">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full">
+          <div className="slide-frame p-8 lg:p-12">
+            <SectionLabel>Depoimentos</SectionLabel>
+            <h2 className="font-display text-3xl lg:text-4xl text-navy leading-tight max-w-2xl">
+              O que nossos hóspedes dizem.
+            </h2>
+
+            <div className="mt-10 grid md:grid-cols-2 gap-6 lg:gap-8">
+              {[
+                {
+                  name: "Mariana Ribeiro",
+                  location: "São Paulo, SP",
+                  photo: "https://i.pravatar.cc/160?img=47",
+                  text: "Estadia impecável em Florianópolis. Tudo estava perfeito na chegada e o atendimento foi rápido e atencioso do início ao fim.",
+                },
+                {
+                  name: "Rafael Almeida",
+                  location: "Curitiba, PR",
+                  photo: "https://i.pravatar.cc/160?img=12",
+                  text: "Imóvel exatamente como nas fotos, muito limpo e bem localizado. Recomendo demais a SC Stays, superou nossas expectativas.",
+                },
+                {
+                  name: "Camila Fernandes",
+                  location: "Porto Alegre, RS",
+                  photo: "https://i.pravatar.cc/160?img=45",
+                  text: "Experiência de outro nível. Comunicação clara, check-in simples e uma casa aconchegante. Voltaremos com certeza!",
+                },
+                {
+                  name: "Thiago Martins",
+                  location: "Belo Horizonte, MG",
+                  photo: "https://i.pravatar.cc/160?img=33",
+                  text: "Equipe muito profissional e receptiva. Cada detalhe foi pensado para que nossa família se sentisse em casa.",
+                },
+              ].map((d) => (
+                <figure
+                  key={d.name}
+                  className="relative bg-cream border border-border p-6 lg:p-8 flex flex-col"
+                >
+                  <Quote className="w-8 h-8 text-gold/60 shrink-0" />
+                  <blockquote className="mt-4 text-navy leading-relaxed text-base lg:text-lg italic">
+                    &ldquo;{d.text}&rdquo;
+                  </blockquote>
+                  <div className="mt-5 flex items-center gap-1 text-gold">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-current" />
+                    ))}
+                  </div>
+                  <figcaption className="mt-6 flex items-center gap-4 pt-5 border-t border-border">
+                    <img
+                      src={d.photo}
+                      alt={`Foto de ${d.name}`}
+                      loading="lazy"
+                      width={56}
+                      height={56}
+                      className="w-14 h-14 rounded-full object-cover border border-gold/40"
+                    />
+                    <div>
+                      <div className="font-display text-lg text-navy leading-tight">{d.name}</div>
+                      <div className="text-xs tracking-[0.2em] uppercase text-muted-ink mt-1">
+                        {d.location}
+                      </div>
+                    </div>
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
             <div className="slide-frame-band" />
           </div>
         </div>
