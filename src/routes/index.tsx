@@ -3,6 +3,7 @@ import {
   Home, Calendar, Sparkles, TrendingUp, FileText,
   Headphones, DollarSign, BarChart3, Search, ClipboardEdit,
   Settings, Award, Instagram, Globe, Phone, ShieldCheck, Clock, Heart, CheckCircle2,
+  Star, Quote,
 } from "lucide-react";
 import logoAsset from "@/assets/sc-stays-logo.png";
 import heroLiving from "@/assets/hero-living.jpg";
