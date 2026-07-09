@@ -160,12 +160,42 @@ Componentes disponíveis: `table`, `form`, `input`, `textarea`, `select`, `dialo
 
 ---
 
+### ✅ GitHub — Boas práticas (já implementado)
+
+| O que | Arquivo | Detalhe |
+|-------|---------|---------|
+| ✅ `.env` protegido | `.gitignore` | Adicionado `.env` e `.env.*`; chaves nunca vão para o repo |
+| ✅ Template de variáveis | `.env.example` | Arquivo seguro com todas as vars necessárias (sem valores reais) |
+| ✅ CI — TypeScript | `.github/workflows/ci.yml` | Roda `tsc --noEmit` em todo push e PR para main |
+| ✅ Dependabot | `.github/dependabot.yml` | PRs automáticos toda segunda com atualizações de segurança |
+
+### ⏳ GitHub — Requer ação sua no painel
+
+**Branch protection em `main`** — `Settings → Branches → Add rule`:
+- Branch name: `main`
+- ✅ Require status checks to pass → selecione `TypeScript`
+- ✅ Require branches to be up to date before merging
+- ✅ Do not allow bypassing the above settings
+
+**Secrets para deploy** — `Settings → Secrets and variables → Actions` (adicionar quando Supabase estiver configurado):
+```
+VITE_SUPABASE_URL
+VITE_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
+ADMIN_USERNAME
+ADMIN_PASSWORD
+```
+
+---
+
 ## Resumo executivo das pendências
 
 | Prioridade | Item | Quem |
 |-----------|------|------|
 | 🔴 Alta | Supabase + schema (SC-007/008) | Dev |
 | 🔴 Alta | Fotos e dados reais dos imóveis | Você |
+| 🟡 Média | Branch protection no GitHub | Você (5 min no painel) |
+| 🟡 Média | Secrets no GitHub Actions | Você (após Supabase configurado) |
 | 🟡 Média | Métricas e depoimentos reais | Você coleta → Dev implementa |
 | 🟡 Média | Basic Auth admin (SC-009) | Dev |
 | 🟡 Média | Painel admin CRUD (SC-010–012) | Dev |
