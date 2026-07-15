@@ -11,8 +11,16 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ParceirosRouteImport } from './routes/parceiros'
 import { Route as ImoveisRouteImport } from './routes/imoveis'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ImoveisSlugRouteImport } from './routes/imoveis.$slug'
+import { Route as AdminPaginaParceirosRouteImport } from './routes/admin.pagina-parceiros'
+import { Route as AdminPaginaImoveisRouteImport } from './routes/admin.pagina-imoveis'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminLeadsRouteImport } from './routes/admin.leads'
+import { Route as AdminImoveisRouteImport } from './routes/admin.imoveis'
+import { Route as AdminImoveisNovoRouteImport } from './routes/admin.imoveis.novo'
+import { Route as AdminImoveisIdRouteImport } from './routes/admin.imoveis.$id'
 
 const ParceirosRoute = ParceirosRouteImport.update({
   id: '/parceiros',
@@ -22,6 +30,11 @@ const ParceirosRoute = ParceirosRouteImport.update({
 const ImoveisRoute = ImoveisRouteImport.update({
   id: '/imoveis',
   path: '/imoveis',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -34,36 +47,133 @@ const ImoveisSlugRoute = ImoveisSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => ImoveisRoute,
 } as any)
+const AdminPaginaParceirosRoute = AdminPaginaParceirosRouteImport.update({
+  id: '/pagina-parceiros',
+  path: '/pagina-parceiros',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPaginaImoveisRoute = AdminPaginaImoveisRouteImport.update({
+  id: '/pagina-imoveis',
+  path: '/pagina-imoveis',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminLeadsRoute = AdminLeadsRouteImport.update({
+  id: '/leads',
+  path: '/leads',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminImoveisRoute = AdminImoveisRouteImport.update({
+  id: '/imoveis',
+  path: '/imoveis',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminImoveisNovoRoute = AdminImoveisNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AdminImoveisRoute,
+} as any)
+const AdminImoveisIdRoute = AdminImoveisIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AdminImoveisRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/imoveis': typeof ImoveisRouteWithChildren
   '/parceiros': typeof ParceirosRoute
+  '/admin/imoveis': typeof AdminImoveisRouteWithChildren
+  '/admin/leads': typeof AdminLeadsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/pagina-imoveis': typeof AdminPaginaImoveisRoute
+  '/admin/pagina-parceiros': typeof AdminPaginaParceirosRoute
   '/imoveis/$slug': typeof ImoveisSlugRoute
+  '/admin/imoveis/$id': typeof AdminImoveisIdRoute
+  '/admin/imoveis/novo': typeof AdminImoveisNovoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/imoveis': typeof ImoveisRouteWithChildren
   '/parceiros': typeof ParceirosRoute
+  '/admin/imoveis': typeof AdminImoveisRouteWithChildren
+  '/admin/leads': typeof AdminLeadsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/pagina-imoveis': typeof AdminPaginaImoveisRoute
+  '/admin/pagina-parceiros': typeof AdminPaginaParceirosRoute
   '/imoveis/$slug': typeof ImoveisSlugRoute
+  '/admin/imoveis/$id': typeof AdminImoveisIdRoute
+  '/admin/imoveis/novo': typeof AdminImoveisNovoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/imoveis': typeof ImoveisRouteWithChildren
   '/parceiros': typeof ParceirosRoute
+  '/admin/imoveis': typeof AdminImoveisRouteWithChildren
+  '/admin/leads': typeof AdminLeadsRoute
+  '/admin/login': typeof AdminLoginRoute
+  '/admin/pagina-imoveis': typeof AdminPaginaImoveisRoute
+  '/admin/pagina-parceiros': typeof AdminPaginaParceirosRoute
   '/imoveis/$slug': typeof ImoveisSlugRoute
+  '/admin/imoveis/$id': typeof AdminImoveisIdRoute
+  '/admin/imoveis/novo': typeof AdminImoveisNovoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/imoveis' | '/parceiros' | '/imoveis/$slug'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/imoveis'
+    | '/parceiros'
+    | '/admin/imoveis'
+    | '/admin/leads'
+    | '/admin/login'
+    | '/admin/pagina-imoveis'
+    | '/admin/pagina-parceiros'
+    | '/imoveis/$slug'
+    | '/admin/imoveis/$id'
+    | '/admin/imoveis/novo'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/imoveis' | '/parceiros' | '/imoveis/$slug'
-  id: '__root__' | '/' | '/imoveis' | '/parceiros' | '/imoveis/$slug'
+  to:
+    | '/'
+    | '/admin'
+    | '/imoveis'
+    | '/parceiros'
+    | '/admin/imoveis'
+    | '/admin/leads'
+    | '/admin/login'
+    | '/admin/pagina-imoveis'
+    | '/admin/pagina-parceiros'
+    | '/imoveis/$slug'
+    | '/admin/imoveis/$id'
+    | '/admin/imoveis/novo'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/imoveis'
+    | '/parceiros'
+    | '/admin/imoveis'
+    | '/admin/leads'
+    | '/admin/login'
+    | '/admin/pagina-imoveis'
+    | '/admin/pagina-parceiros'
+    | '/imoveis/$slug'
+    | '/admin/imoveis/$id'
+    | '/admin/imoveis/novo'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   ImoveisRoute: typeof ImoveisRouteWithChildren
   ParceirosRoute: typeof ParceirosRoute
 }
@@ -84,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImoveisRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -98,8 +215,89 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ImoveisSlugRouteImport
       parentRoute: typeof ImoveisRoute
     }
+    '/admin/pagina-parceiros': {
+      id: '/admin/pagina-parceiros'
+      path: '/pagina-parceiros'
+      fullPath: '/admin/pagina-parceiros'
+      preLoaderRoute: typeof AdminPaginaParceirosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pagina-imoveis': {
+      id: '/admin/pagina-imoveis'
+      path: '/pagina-imoveis'
+      fullPath: '/admin/pagina-imoveis'
+      preLoaderRoute: typeof AdminPaginaImoveisRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/leads': {
+      id: '/admin/leads'
+      path: '/leads'
+      fullPath: '/admin/leads'
+      preLoaderRoute: typeof AdminLeadsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/imoveis': {
+      id: '/admin/imoveis'
+      path: '/imoveis'
+      fullPath: '/admin/imoveis'
+      preLoaderRoute: typeof AdminImoveisRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/imoveis/novo': {
+      id: '/admin/imoveis/novo'
+      path: '/novo'
+      fullPath: '/admin/imoveis/novo'
+      preLoaderRoute: typeof AdminImoveisNovoRouteImport
+      parentRoute: typeof AdminImoveisRoute
+    }
+    '/admin/imoveis/$id': {
+      id: '/admin/imoveis/$id'
+      path: '/$id'
+      fullPath: '/admin/imoveis/$id'
+      preLoaderRoute: typeof AdminImoveisIdRouteImport
+      parentRoute: typeof AdminImoveisRoute
+    }
   }
 }
+
+interface AdminImoveisRouteChildren {
+  AdminImoveisIdRoute: typeof AdminImoveisIdRoute
+  AdminImoveisNovoRoute: typeof AdminImoveisNovoRoute
+}
+
+const AdminImoveisRouteChildren: AdminImoveisRouteChildren = {
+  AdminImoveisIdRoute: AdminImoveisIdRoute,
+  AdminImoveisNovoRoute: AdminImoveisNovoRoute,
+}
+
+const AdminImoveisRouteWithChildren = AdminImoveisRoute._addFileChildren(
+  AdminImoveisRouteChildren,
+)
+
+interface AdminRouteChildren {
+  AdminImoveisRoute: typeof AdminImoveisRouteWithChildren
+  AdminLeadsRoute: typeof AdminLeadsRoute
+  AdminLoginRoute: typeof AdminLoginRoute
+  AdminPaginaImoveisRoute: typeof AdminPaginaImoveisRoute
+  AdminPaginaParceirosRoute: typeof AdminPaginaParceirosRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminImoveisRoute: AdminImoveisRouteWithChildren,
+  AdminLeadsRoute: AdminLeadsRoute,
+  AdminLoginRoute: AdminLoginRoute,
+  AdminPaginaImoveisRoute: AdminPaginaImoveisRoute,
+  AdminPaginaParceirosRoute: AdminPaginaParceirosRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface ImoveisRouteChildren {
   ImoveisSlugRoute: typeof ImoveisSlugRoute
@@ -114,6 +312,7 @@ const ImoveisRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   ImoveisRoute: ImoveisRouteWithChildren,
   ParceirosRoute: ParceirosRoute,
 }

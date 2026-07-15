@@ -10,11 +10,13 @@ import {
   CarouselNext,
   CarouselPrevious,
 } from "@/components/ui/carousel";
-import { MOCK_PROPERTIES } from "@/lib/mock-properties";
+import { getActiveProperty } from "@/lib/public-properties";
+import { isFieldVisible } from "@/lib/property-fields";
+import { trackWhatsappClick } from "@/lib/track-whatsapp-click";
 
 export const Route = createFileRoute("/imoveis/$slug")({
-  loader: ({ params }) => {
-    const property = MOCK_PROPERTIES.find((p) => p.slug === params.slug);
+  loader: async ({ params }) => {
+    const property = await getActiveProperty(params.slug);
     if (!property) throw notFound();
     return property;
   },
@@ -35,7 +37,7 @@ export const Route = createFileRoute("/imoveis/$slug")({
       { title: `${loaderData?.name ?? "Imóvel"} — SC Stays Collection` },
       {
         name: "description",
-        content: loaderData?.shortDesc ?? "Imóvel para temporada gerenciado pela SC Stays Collection em Santa Catarina.",
+        content: loaderData?.short_desc ?? "Imóvel para temporada gerenciado pela SC Stays Collection em Santa Catarina.",
       },
     ],
   }),
@@ -69,6 +71,14 @@ function StatBlock({ icon, value, label }: { icon: React.ReactNode; value: strin
 
 function PropertyDetail() {
   const property = Route.useLoaderData();
+
+  const showNeighborhood = isFieldVisible(property.visible_fields, "neighborhood") && property.neighborhood;
+  const showBedrooms = isFieldVisible(property.visible_fields, "bedrooms") && property.bedrooms != null;
+  const showBathrooms = isFieldVisible(property.visible_fields, "bathrooms") && property.bathrooms != null;
+  const showMaxGuests = isFieldVisible(property.visible_fields, "max_guests") && property.max_guests != null;
+  const showDescription = isFieldVisible(property.visible_fields, "description") && property.description;
+  const showAmenities = isFieldVisible(property.visible_fields, "amenities") && property.amenities && property.amenities.length > 0;
+  const hasStats = showBedrooms || showBathrooms || showMaxGuests;
 
   const waMsg = encodeURIComponent(
     `Olá! Vi o imóvel "${property.name}" (${property.neighborhood}, ${property.city}) no site da SC Stays e gostaria de saber mais sobre disponibilidade.`
@@ -117,7 +127,8 @@ function PropertyDetail() {
           {/* Location */}
           <div className="flex items-center gap-2 text-muted-ink/70 text-xs mb-3">
             <MapPin className="w-3.5 h-3.5 shrink-0" />
-            {property.neighborhood}, {property.city} — {property.state}
+            {showNeighborhood ? `${property.neighborhood}, ` : ""}
+            {property.city} — {property.state}
           </div>
 
           {/* Title */}
@@ -126,50 +137,62 @@ function PropertyDetail() {
           </h1>
 
           {/* Stats */}
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            <StatBlock
-              icon={<BedDouble className="w-5 h-5" />}
-              value={property.bedrooms}
-              label={property.bedrooms === 1 ? "Quarto" : "Quartos"}
-            />
-            <StatBlock
-              icon={<Bath className="w-5 h-5" />}
-              value={property.bathrooms}
-              label={property.bathrooms === 1 ? "Banheiro" : "Banheiros"}
-            />
-            <StatBlock
-              icon={<Users className="w-5 h-5" />}
-              value={property.maxGuests}
-              label={property.maxGuests === 1 ? "Pessoa" : "Pessoas"}
-            />
-          </div>
+          {hasStats && (
+            <div className="mt-6 grid grid-cols-3 gap-3">
+              {showBedrooms && (
+                <StatBlock
+                  icon={<BedDouble className="w-5 h-5" />}
+                  value={property.bedrooms!}
+                  label={property.bedrooms === 1 ? "Quarto" : "Quartos"}
+                />
+              )}
+              {showBathrooms && (
+                <StatBlock
+                  icon={<Bath className="w-5 h-5" />}
+                  value={property.bathrooms!}
+                  label={property.bathrooms === 1 ? "Banheiro" : "Banheiros"}
+                />
+              )}
+              {showMaxGuests && (
+                <StatBlock
+                  icon={<Users className="w-5 h-5" />}
+                  value={property.max_guests!}
+                  label={property.max_guests === 1 ? "Pessoa" : "Pessoas"}
+                />
+              )}
+            </div>
+          )}
 
           {/* Description */}
-          <div className="mt-8">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="inline-block w-6 h-px bg-gold" />
-              <span className="eyebrow">Sobre o imóvel</span>
+          {showDescription && (
+            <div className="mt-8">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-block w-6 h-px bg-gold" />
+                <span className="eyebrow">Sobre o imóvel</span>
+              </div>
+              <p className="text-muted-ink leading-relaxed text-base">{property.description}</p>
             </div>
-            <p className="text-muted-ink leading-relaxed text-base">{property.description}</p>
-          </div>
+          )}
 
           {/* Amenities */}
-          <div className="mt-8">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="inline-block w-6 h-px bg-gold" />
-              <span className="eyebrow">O que tem no imóvel</span>
+          {showAmenities && (
+            <div className="mt-8">
+              <div className="flex items-center gap-3 mb-4">
+                <span className="inline-block w-6 h-px bg-gold" />
+                <span className="eyebrow">O que tem no imóvel</span>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                {property.amenities!.map((amenity) => (
+                  <div key={amenity} className="flex items-center gap-2.5 text-sm text-navy border border-border/50 px-3 py-2.5 bg-cream">
+                    <span className="text-gold shrink-0">
+                      {AMENITY_ICONS[amenity] ?? <span className="w-4 h-4 inline-block rounded-full border border-gold/50" />}
+                    </span>
+                    {amenity}
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-              {property.amenities.map((amenity) => (
-                <div key={amenity} className="flex items-center gap-2.5 text-sm text-navy border border-border/50 px-3 py-2.5 bg-cream">
-                  <span className="text-gold shrink-0">
-                    {AMENITY_ICONS[amenity] ?? <span className="w-4 h-4 inline-block rounded-full border border-gold/50" />}
-                  </span>
-                  {amenity}
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Right — sticky CTA */}
@@ -190,6 +213,7 @@ function PropertyDetail() {
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackWhatsappClick({ page: "imoveis_slug", button: "detalhe_imovel", propertySlug: property.slug })}
               className="mt-6 flex items-center justify-center gap-2 w-full py-3.5 text-xs tracking-[0.24em] uppercase font-medium text-white transition"
               style={{ backgroundColor: "#25D366" }}
             >

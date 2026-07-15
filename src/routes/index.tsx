@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import logoAsset from "@/assets/sc-stays-logo-transparent.png";
+import logoAsset from "@/assets/new-logo-transparent.png";
 import heroLiving from "@/assets/hero-living.jpg";
 import coast from "@/assets/coast.jpg";
 import { ArrowRight } from "lucide-react";

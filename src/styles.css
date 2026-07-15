@@ -15,8 +15,10 @@
   --color-cream-deep: var(--cream-deep);
   --color-navy: var(--navy);
   --color-navy-deep: var(--navy-deep);
+  --color-navy-soft: var(--navy-soft);
   --color-gold: var(--gold);
   --color-gold-soft: var(--gold-soft);
+  --color-gold-deep: var(--gold-deep);
   --color-ink: var(--ink);
   --color-muted-ink: var(--muted-ink);
 
@@ -47,12 +49,14 @@
   /* Brand palette derived from the SC Stays logo */
   --cream: oklch(0.972 0.012 82);          /* #f6f1e8 */
   --cream-deep: oklch(0.945 0.015 80);
-  --navy: oklch(0.235 0.045 260);          /* deep navy from logo */
-  --navy-deep: oklch(0.18 0.04 260);
-  --gold: oklch(0.72 0.11 78);             /* warm gold accent */
-  --gold-soft: oklch(0.82 0.07 80);
-  --ink: oklch(0.22 0.03 260);
-  --muted-ink: oklch(0.48 0.02 260);
+  --navy: oklch(0.359 0.067 172.5);        /* #054839 — sampled from the logo lettering (darker than the flat #0B6E4F brand hex) */
+  --navy-deep: oklch(0.299 0.07 172.5);    /* #00382A */
+  --navy-soft: oklch(0.539 0.04 172.5);    /* #56766C */
+  --gold: oklch(0.766 0.138 91.6);         /* #D3AF37 — brass gold from logo */
+  --gold-soft: oklch(0.886 0.09 91.6);     /* #EFD894 */
+  --gold-deep: oklch(0.646 0.145 91.6);    /* #AE8900 */
+  --ink: oklch(0.22 0.02 172.5);
+  --muted-ink: oklch(0.48 0.015 172.5);
 
   --background: var(--cream);
   --foreground: var(--ink);
@@ -116,7 +120,7 @@
   position: relative;
   background: var(--color-card);
   border: 1px solid var(--color-border);
-  box-shadow: 0 30px 60px -40px oklch(0.235 0.045 260 / 0.25);
+  box-shadow: 0 30px 60px -40px oklch(0.359 0.067 172.5 / 0.25);
 }
 
 @utility slide-frame-band {

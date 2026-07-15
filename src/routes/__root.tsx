@@ -15,7 +15,7 @@ const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
-import logoAsset from "@/assets/sc-stays-logo-transparent.png";
+import logoAsset from "@/assets/new-logo-transparent.png";
 import { Menu, X } from "lucide-react";
 
 function NotFoundComponent() {

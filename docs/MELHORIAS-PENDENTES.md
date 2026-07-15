@@ -6,6 +6,15 @@
 
 ## Parte 1 — Implementado
 
+### Identidade visual — rebranding (2026-07-14)
+
+| O que | Detalhe |
+|-------|---------|
+| ✅ Paleta de cores atualizada | `src/styles.css` — token `--navy` passou de azul-marinho para verde-esmeralda. Ajustado 2x: primeiro para `#0B6E4F` (hex de marca informado), depois para `#054839` — cor medida diretamente dos pixels da letra no `new_logo.png`, que é mais escura que o hex de marca por causa do degradê/relevo da arte. `--gold` passou de dourado pastel para `#D3AF37` (dourado do novo logo). Novos tokens auxiliares: `--navy-soft`, `--gold-deep` |
+| ✅ `--ink`/`--muted-ink` recalibrados | Hue alinhado ao verde (172.5) em vez do azul antigo (260), evitando texto com viés azulado sobre fundo verde |
+| ✅ Sombra do `slide-frame` | Atualizada para usar o novo hue verde em vez do azul hardcoded |
+| ✅ Logo trocado | `src/assets/new_logo.png` (fornecido) processado para `src/assets/new-logo-transparent.png` (fundo removido via chroma-key + crop) e usado em `__root.tsx` (header), `index.tsx` (home) e `parceiros.tsx` (header + footer) |
+
 ### SEO Técnico (`__root.tsx`)
 
 | O que | Detalhe |
@@ -46,27 +55,31 @@
 |------|---------|---------|
 | ✅ `/` | `routes/index.tsx` | Home bifurcação: "Quero alugar" e "Sou proprietário"; logo hero centralizado; sem header global |
 | ✅ `/parceiros` | `routes/parceiros.tsx` | Landing institucional B2B (proprietários); ex-`index.tsx` |
-| ✅ Imagem home | `sc-stays-logo-hero-readable.png` | Logo hero na bifurcação |
-| ✅ Logo header/footer | `sc-stays-logo-transparent.png` | Usado no Header e footer de `/parceiros` |
+| ✅ Imagem home | `new-logo-transparent.png` | Logo hero na bifurcação (atualizado no rebranding, ver acima) |
+| ✅ Logo header/footer | `new-logo-transparent.png` | Usado no Header e footer de `/parceiros` (atualizado no rebranding, ver acima) |
 
 ### Catálogo de hóspedes (SC-013/014)
 
 | Rota | Arquivo | Detalhe |
 |------|---------|---------|
-| ✅ `/imoveis` | `routes/imoveis.tsx` | Catálogo com grid de cards; slider de fotos nos cards (setas + dots + contador); sub-nav sticky |
-| ✅ `/imoveis/$slug` | `routes/imoveis.$slug.tsx` | Detalhe com carrossel (shadcn Carousel), stats, amenidades, CTA WhatsApp pré-preenchido com nome do imóvel |
-| ✅ Mock data | `src/lib/mock-properties.ts` | 3 imóveis mock; estrutura idêntica ao schema Supabase futuro |
+| ✅ `/imoveis` | `routes/imoveis.tsx` | Catálogo com grid de cards; slider de fotos nos cards (setas + dots + contador); sub-nav sticky; **dados vêm do Supabase** (`listActiveProperties`) |
+| ✅ `/imoveis/$slug` | `routes/imoveis.$slug.tsx` | Detalhe com carrossel (shadcn Carousel), stats, amenidades, CTA WhatsApp pré-preenchido com nome do imóvel; **dados vêm do Supabase** (`getActiveProperty`) |
+| ✅ Dados reais | Tabela `properties` no Supabase | Os 3 imóveis que antes eram mock (`mock-properties.ts`, removido) agora são registros reais em `status = 'active'` |
+| ⏳ Fotos reais | `src/lib/property-image-fallback.ts` | **Temporário**: todo imóvel usa as mesmas 3 imagens locais (`hero-living`, `bedroom`, `coast`) até o bucket do Storage existir (SC-008) |
 
-### Seções de prova social em `/imoveis`
+### Seções de prova social em `/imoveis` (2026-07-15 — migradas para o Supabase + admin)
 
 | Seção | Detalhe |
 |-------|---------|
-| ✅ Sub-nav sticky | 4 âncoras: Imóveis · Resultados · Avaliações · Depoimentos; seção ativa detectada por IntersectionObserver |
-| ✅ Resultados | 4 cards navy: 10 anos de experiência, 100% vistoriados, suporte 24h, atendimento dedicado — **flag ativo, badge "exemplo" visível** |
-| ✅ Avaliações | Notas Airbnb (4,9), Booking.com (9,4), Google (4,8) com estrelas visuais — **flag ativo, badge "exemplo" visível** |
-| ✅ Depoimentos | 3 depoimentos sobre a experiência de atendimento SC Stays — **flag ativo, badge "exemplo" visível** |
-| ✅ Feature flags | `src/lib/feature-flags.ts` — todos em `true`; badge tracejado "exemplo" sinaliza seções com dado fictício |
-| ✅ Logo home (`/`) | Trocado para `sc-stays-logo-transparent.png` (igual ao header) |
+| ✅ Sub-nav sticky | Só lista âncoras de seções visíveis; seção ativa detectada por IntersectionObserver |
+| ✅ Catálogo | Grid de imóveis — visibilidade controlável em `/admin/pagina-imoveis` |
+| ✅ Resultados | 4 cards (ícone + valor + legenda) — texto e ícone editáveis, visibilidade controlável |
+| ✅ Avaliações | Notas Airbnb/Booking.com/Google com estrelas — valores editáveis, visibilidade controlável |
+| ✅ Depoimentos | Lista dinâmica — admin adiciona/edita/remove depoimentos, visibilidade controlável |
+| ✅ `/admin/pagina-imoveis` | Tela única com switch de visibilidade + edição de conteúdo de cada seção; botão "Salvar alterações" |
+| ✅ Feature flags removidas | `src/lib/feature-flags.ts` deletado — visibilidade agora é 100% controlada pelo banco (`site_sections`), sem precisar de deploy para mudar |
+| ✅ Badge "exemplo" removido | Conteúdo agora é gerenciável pelo cliente via admin, deixou de ser fictício por definição |
+| ✅ Logo home (`/`) | Trocado para `new-logo-transparent.png` (igual ao header) |
 
 ---
 
@@ -74,13 +87,11 @@
 
 ### ⏳ Conteúdo para substituir os mocks
 
-**`[PRECISA DE VOCÊ]`** — substituo em minutos quando receber:
+**`[PRECISA DE VOCÊ]`** — os itens de `/imoveis` (Resultados, Avaliações, Depoimentos) agora você mesmo edita em `/admin/pagina-imoveis`, sem precisar pedir pro dev. Falta só:
 
 | Item | O que enviar | Onde aparece |
 |------|-------------|--------------|
-| Métricas reais | Taxa de ocupação, aumento de receita %, nota média, nº de imóveis | `/parceiros` seção Resultados + `/imoveis` seção Resultados |
-| Notas reais nos apps | Print ou números exatos do Airbnb, Booking, Google | `/imoveis` seção Avaliações |
-| Depoimentos de hóspedes | Nome, cidade, texto 2–4 frases sobre atendimento SC Stays | `/imoveis` seção Depoimentos |
+| Métricas reais para `/parceiros` | Taxa de ocupação, aumento de receita %, nota média, nº de imóveis | `/parceiros` seção Resultados (ainda hardcoded — não migrado para o admin) |
 | Depoimentos de proprietários | Nome, cidade, texto sobre gestão | `/parceiros` (seção a criar quando tiver conteúdo) |
 | Fotos dos imóveis reais | — | Virá do Supabase Storage (SC-008) |
 
@@ -94,6 +105,7 @@
    ```
    VITE_GA_ID=G-XXXXXXXXXX
    ```
+Retorno: Criado.
 
 ---
 
@@ -103,7 +115,7 @@
 2. Crie/reivindique "SC Stays Collection"
 3. Preencha: Florianópolis, `(48) 99182-2477`, `www.scstays.com.br`, categoria: **Serviço de gestão de propriedades**
 4. Verifique o perfil
-
+Retorno: Criado.
 ---
 
 ### ⏳ 11. Seção "Quem Somos" em `/parceiros`
@@ -120,43 +132,103 @@ Dado disponível: 10 anos de experiência no mercado.
 
 O código aponta para `https://www.scstays.com.br/og-image.jpg` — arquivo ainda não existe.
 
-**Spec para o designer:** 1200 × 630 px · paleta cream/navy/gold · logo + tagline + foto ao fundo · salvar em `public/og-image.jpg`
+**Spec para o designer:** 1200 × 630 px · paleta cream / verde `#054839` / dourado `#D3AF37` (nova identidade, ver "Identidade visual — rebranding" acima) · logo + tagline + foto ao fundo · salvar em `public/og-image.jpg`
 
 **Provisório:** `Copy-Item src\assets\hero-living.jpg public\og-image.jpg`
 
 ---
 
-### 🔧 SC-007/008 — Supabase (próximo passo técnico)
+### SC-007 — Supabase: schema e clients (2026-07-14)
 
-```bash
-npm install @supabase/supabase-js
-```
+| O que | Detalhe |
+|-------|---------|
+| ✅ `@supabase/supabase-js` instalado | `package.json` |
+| ✅ Projeto Supabase conectado | `zeiauwvkfgibysayvhxu` (ref em `.mcp.json`); `.env` local criado com `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` + `SUPABASE_SERVICE_ROLE_KEY` reais |
+| ✅ `src/lib/supabase.ts` | Client browser (anon key) — usado também nos loaders públicos de `/imoveis` |
+| ✅ `src/lib/supabase.server.ts` | Client server (`createSupabaseServerClient()`, service role — só usado dentro de `createServerFn`) |
+| ✅ Schema aplicado no banco remoto | Migrations `sc007_create_properties_schema` + `sc010_add_visible_fields_to_properties` — tabelas `properties` (+ coluna `visible_fields jsonb`) e `property_images`, RLS habilitado (leitura pública só de imóveis `status = 'active'`). Advisor de segurança: 0 alertas |
 
-Criar projeto no Supabase, adicionar ao `.env`:
-```
-VITE_SUPABASE_URL=https://xxxx.supabase.co
-VITE_SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...   # nunca com prefixo VITE_
-```
+### ✅ SC-009 — Login do admin (2026-07-15, substitui Basic Auth)
 
-Schema SQL completo em `docs/SC-000-diagnostico.md` seção 5.
+Trocado o popup nativo de Basic Auth por uma página de login própria (`/admin/login`) com sessão em cookie selado (criptografado + assinado, via `useSession` do TanStack Start).
 
----
+| O que | Detalhe |
+|-------|---------|
+| ✅ `src/lib/admin-session.ts` | `getAdminSession`/`setAdminAuthenticated`/`clearAdminSession` — cookie `sc_admin_session`, 8h de validade, `httpOnly`, `secure` (auto em https) |
+| ✅ `src/lib/admin-auth.server.ts` | `adminLogin`/`adminLogout` (server functions) + `requireAdminMiddleware` |
+| ✅ `/admin/login` | `routes/admin.login.tsx` — formulário simples com a cara do site |
+| ✅ Botão "Sair" | Header do admin (`routes/admin.tsx`) |
+| ✅ `src/start.ts` | Redireciona páginas `/admin/*` sem sessão para `/admin/login` (conveniência de UX) |
+| 🔒 **Correção de segurança** | As chamadas RPC de server functions (`/_serverFn/...`) **não** passam pelo middleware de página — só pelo pathname `/admin/*`. Isso deixava `listAdminProperties`/`createAdminProperty`/etc. acessíveis diretamente sem nenhuma autenticação, mesmo com o Basic Auth antigo. Corrigido anexando `requireAdminMiddleware` (middleware de função) a cada server function admin individualmente — é essa camada, não o redirect de página, que garante a proteção real. Confirmado com teste automatizado: chamada direta ao endpoint sem sessão agora falha. |
 
-### 🔧 SC-009 — Basic Auth para `/admin/*`
+**`[PRECISA DE VOCÊ]`** — trocar `ADMIN_PASSWORD` no `.env` por uma senha forte antes de deploy/compartilhamento (senha atual é de desenvolvimento local).
 
-Middleware Nitro em `src/start.ts`. Vars necessárias:
-```
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=senha-segura
-```
+### ✅ SC-010–012 — Painel admin de imóveis (2026-07-14)
 
----
+| Rota | Arquivo | Detalhe |
+|------|---------|---------|
+| `/admin` | `routes/admin.tsx` | Layout (sem header/rodapé globais) + dashboard |
+| `/admin/imoveis` | `routes/admin.imoveis.tsx` | Tabela com nome, slug, status, link de edição e **excluir** (2026-07-15) |
+| `/admin/imoveis/novo` | `routes/admin.imoveis.novo.tsx` | Formulário de criação |
+| `/admin/imoveis/$id` | `routes/admin.imoveis.$id.tsx` | Formulário de edição |
 
-### 🔧 SC-010–012 — Painel admin de imóveis
+CRUD via server functions (`src/lib/properties.server.ts`, service role, ignora RLS — só acessível atrás do login).
 
-Rotas a criar: `/admin`, `/admin/imoveis`, `/admin/imoveis/novo`, `/admin/imoveis/$id`
-Componentes disponíveis: `table`, `form`, `input`, `textarea`, `select`, `dialog`, `skeleton`, `sonner` — todos em `src/components/ui/`
+**Excluir imóvel (2026-07-15):** botão de lixeira por linha na lista, com `AlertDialog` de confirmação (ação irreversível — apaga o imóvel e, por `on delete cascade`, suas fotos em `property_images`). Server function `deleteAdminProperty`.
+
+**Bug de cache corrigido (2026-07-15):** depois de criar/editar um imóvel e voltar pra lista, ela às vezes continuava mostrando os dados antigos. Causa: `/admin/imoveis/novo` e `/admin/imoveis/$id` são rotas *filhas* de `/admin/imoveis` (convenção de arquivo com ponto) — o loader da lista já tinha rodado como rota pai, e o TanStack Router não recarrega automaticamente ao voltar pra ela (o match "permanece", não "entra de novo"). Corrigido chamando `router.invalidate()` antes de navegar de volta, nos três fluxos (criar/editar/excluir).
+
+**Controle de visibilidade por campo (pedido extra, 2026-07-14):** cada imóvel tem uma coluna `visible_fields` (jsonb). No formulário admin (`src/components/admin/property-form.tsx`), os campos que aparecem publicamente (descrição curta, bairro, quartos, banheiros, hóspedes, descrição completa, comodidades) têm um checkbox "Visível no site" ao lado do texto — desmarcar oculta o campo em `/imoveis` e `/imoveis/$slug` sem apagar o valor salvo. Testado ponta a ponta com Playwright (editar → desmarcar → salvar → conferir que some do catálogo → reverter).
+
+### ⏳ SC-008 — Storage de imagens (próximo passo técnico)
+
+Bucket `property-images` (público) ainda não criado. Até lá, todo imóvel usa o fallback local (ver tabela acima). Ver `docs/SC-000-diagnostico.md` seção 6.
+
+### ✅ SC-019 — Captura de leads + indicadores de performance (2026-07-15)
+
+Duas tabelas no Supabase, RLS habilitado e sem policy (só `service_role` acessa; inserts/leituras passam por server functions em `src/lib/leads.server.ts`):
+
+| Tabela | O que guarda | Preenchida por |
+|--------|-------------|-----------------|
+| `proposal_leads` | Envios do formulário "Receba uma proposta" em `/parceiros` (nome, e-mail, telefone, bairro, situação, status de acompanhamento) | `submitProposalLead` — chamada pelo `LeadForm` ao clicar "Quero uma proposta", em paralelo à abertura do WhatsApp |
+| `whatsapp_clicks` | Cada clique em botão de WhatsApp pelo site (página, botão, imóvel se aplicável) | `logWhatsappClick`/`trackWhatsappClick` — instrumentado em 5 pontos: botão flutuante, CTA intermediário e rodapé de `/parceiros`, CTA geral de `/imoveis`, CTA do imóvel em `/imoveis/$slug` |
+
+`/admin/leads` (`routes/admin.leads.tsx`) — reformulado em 2026-07-15 para ser um log + painel de indicadores:
+- **KPIs no topo:** total de propostas, total de cliques no WhatsApp (últimos 500), taxa aproximada proposta/clique, propostas aguardando contato — cada um com contagem dos últimos 30 dias
+- **Breakdown de cliques por origem** (página + botão), ordenado do mais pro menos clicado
+- **Duas abas** (Propostas / Cliques no WhatsApp) com a tabela detalhada — status da proposta editável direto na linha (novo/contatado/convertido/perdido)
+- **Exportar CSV** — botão em cada aba, baixa a lista completa (`src/lib/csv.ts`)
+
+Testado ponta a ponta: formulário salva no banco e aparece no admin; clique em WhatsApp salva e aparece no admin; export CSV dispara download; tudo protegido por `requireAdminMiddleware`.
+
+### ✅ Situação atual do imóvel — mais opções (2026-07-15)
+
+Select do formulário "Receba uma proposta" (`/parceiros`) ampliado de 3 para 7 opções, incluindo "Tenho gestora, quero trocar", "Uso só para mim, ainda não aluguei", "Imóvel em construção ou reforma" e **"Prefiro não informar agora"** (pra quem não quer compartilhar). Campo continua `text` livre no banco — não precisou de migration.
+
+### ✅ SC-021 — Admin da página /imoveis (2026-07-15)
+
+Tabelas novas, leitura pública (RLS `select using (true)`; escrita só via `service_role`):
+
+| Tabela | Conteúdo |
+|--------|----------|
+| `site_sections` | `key` (`catalogo`/`resultados`/`notas_apps`/`depoimentos`) + `visible` |
+| `resultado_cards` | 4 linhas fixas (ícone, valor, legenda) |
+| `app_ratings` | 3 linhas fixas (plataforma, nota, máximo, texto exibido) |
+| `depoimentos` | Lista dinâmica (nome, origem, texto) — admin pode adicionar e remover |
+
+`/admin/pagina-imoveis` — uma tela com switch de visibilidade + campos editáveis para cada seção, botão único "Salvar alterações" (`saveSiteConfig`). `/imoveis` lê tudo isso via `src/lib/site-content.ts` (`getImoveisPageContent`, client anon — RLS permite leitura pública).
+
+Achado e corrigido durante o teste: o botão "Remover" depoimento só tirava a linha do estado local; o backend esperava uma flag `_delete` que o cliente nunca enviava, então nada era apagado de verdade. Corrigido calculando a diferença entre os IDs enviados e os que existem no banco.
+
+### ✅ SC-023 — Admin da página /parceiros (2026-07-15)
+
+Mesmo padrão do SC-021, reaproveitando a tabela `site_sections` (chaves prefixadas `parceiros_*` pra não colidir com as de `/imoveis`). `/admin/pagina-parceiros` — só controla visibilidade (liga/desliga), sem edição de texto/conteúdo (não foi pedido nessa rodada).
+
+**12 blocos controláveis** — todos exceto o hero, que fica fixo por pedido explícito: Faixa de plataformas, O Problema, A Solução, O Que Fazemos, CTA intermediário, Valor para quem é dono, Como Funciona, Resultados, Receba uma proposta (formulário), Perguntas Frequentes, Rodapé/Contato, Botão flutuante do WhatsApp.
+
+`src/lib/parceiros-content.ts` (leitura pública) / `src/lib/parceiros-content.server.ts` (`getAdminParceirosSections`/`saveParceirosSections`, protegidos por `requireAdminMiddleware`).
+
+**Nota:** os links do menu do header (`__root.tsx`) apontam para âncoras (`#problema`, `#faq` etc.) e não sabem se a seção está oculta — se um bloco for desligado, o link correspondente no menu leva a lugar nenhum até a seção voltar a ficar visível. Não corrigido nessa rodada (não foi pedido).
 
 ---
 
@@ -184,6 +256,7 @@ VITE_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY
 ADMIN_USERNAME
 ADMIN_PASSWORD
+ADMIN_SESSION_SECRET
 ```
 
 ---
@@ -192,13 +265,12 @@ ADMIN_PASSWORD
 
 | Prioridade | Item | Quem |
 |-----------|------|------|
-| 🔴 Alta | Supabase + schema (SC-007/008) | Dev |
-| 🔴 Alta | Fotos e dados reais dos imóveis | Você |
+| 🔴 Alta | Trocar senha do admin por uma forte antes de deploy (`.env` → `ADMIN_PASSWORD`) | Você |
+| 🔴 Alta | Storage bucket + fotos reais dos imóveis (SC-008) | Dev |
 | 🟡 Média | Branch protection no GitHub | Você (5 min no painel) |
 | 🟡 Média | Secrets no GitHub Actions | Você (após Supabase configurado) |
-| 🟡 Média | Métricas e depoimentos reais | Você coleta → Dev implementa |
-| 🟡 Média | Basic Auth admin (SC-009) | Dev |
-| 🟡 Média | Painel admin CRUD (SC-010–012) | Dev |
+| 🟡 Média | Preencher conteúdo real de Resultados/Avaliações/Depoimentos | Você mesmo, em `/admin/pagina-imoveis` |
+| 🟡 Média | Métricas reais de `/parceiros` | Você coleta → Dev implementa (ainda não é admin-editável) |
 | 🟢 Baixa | Google Analytics (GA4) | Você cria conta → Dev ativa |
 | 🟢 Baixa | Google Business Profile | Você |
 | 🟢 Baixa | Seção "Quem Somos" | Você envia foto/bio → Dev implementa |
