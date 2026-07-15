@@ -232,6 +232,20 @@ Mesmo padrão do SC-021, reaproveitando a tabela `site_sections` (chaves prefixa
 
 ---
 
+### 🔧 SC-024 — Deploy em produção via Cloudflare Workers (2026-07-15)
+
+HostGator (hospedagem compartilhada) não roda esse projeto — precisa de um servidor, não só arquivos estáticos (ver decisão registrada em conversa). Caminho escolhido: **Cloudflare Workers** (grátis, é o alvo de build que o projeto já usa por padrão via `@lovable.dev/vite-tanstack-config`), com deploy automático a cada push em `main`.
+
+| O que | Detalhe |
+|-------|---------|
+| ✅ `npm run build` testado localmente | Gera `.output/server/` com o worker (`index.mjs`) + `wrangler.json` auto-gerado pelo Nitro (`nodejs_compat` ativado — necessário pro SDK do Supabase) |
+| ✅ `.github/workflows/deploy.yml` | Roda em todo push pra `main` (+ disparo manual): `npm ci` → `npm run build` (injeta as `VITE_*` do GitHub Secrets) → `wrangler deploy` (via `cloudflare/wrangler-action`) usando `.output/server/wrangler.json` |
+| ⏳ **`[PRECISA DE VOCÊ]`** Secrets no GitHub | `Settings → Secrets and variables → Actions`: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (opcional: `VITE_GA_ID`) |
+| ⏳ **`[PRECISA DE VOCÊ]`** Secrets no Worker (Cloudflare, não GitHub) | Painel Cloudflare → Workers & Pages → o worker → Settings → Variables and Secrets: `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_SESSION_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` — precisam existir aqui porque rodam no servidor a cada requisição, não no build |
+| ⏳ Domínio customizado | Depois do primeiro deploy funcionar em `*.workers.dev`, falta apontar `scstays.com.br` (hoje no HostGator) pra Cloudflare — próximo passo, ainda não feito |
+
+---
+
 ### ✅ GitHub — Boas práticas (já implementado)
 
 | O que | Arquivo | Detalhe |
@@ -265,10 +279,11 @@ ADMIN_SESSION_SECRET
 
 | Prioridade | Item | Quem |
 |-----------|------|------|
+| 🔴 Alta | Configurar secrets de deploy no GitHub + no Worker (SC-024) | Você — passo a passo na conversa |
 | 🔴 Alta | Trocar senha do admin por uma forte antes de deploy (`.env` → `ADMIN_PASSWORD`) | Você |
 | 🔴 Alta | Storage bucket + fotos reais dos imóveis (SC-008) | Dev |
+| 🟡 Média | Apontar domínio `scstays.com.br` (HostGator) pra Cloudflare | Você + Dev, depois do 1º deploy funcionar |
 | 🟡 Média | Branch protection no GitHub | Você (5 min no painel) |
-| 🟡 Média | Secrets no GitHub Actions | Você (após Supabase configurado) |
 | 🟡 Média | Preencher conteúdo real de Resultados/Avaliações/Depoimentos | Você mesmo, em `/admin/pagina-imoveis` |
 | 🟡 Média | Métricas reais de `/parceiros` | Você coleta → Dev implementa (ainda não é admin-editável) |
 | 🟢 Baixa | Google Analytics (GA4) | Você cria conta → Dev ativa |

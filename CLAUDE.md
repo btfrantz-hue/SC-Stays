@@ -34,7 +34,7 @@ Reaproveita a mesma tabela `site_sections`, com chaves prefixadas `parceiros_*` 
 
 - **Framework:** TanStack Start (SSR) + TanStack Router v1 (file-based)
 - **UI:** React 19 + Tailwind CSS v4 (`@theme` syntax) + shadcn/ui
-- **Deploy:** Nitro → Cloudflare Workers (edge, sem filesystem)
+- **Deploy:** Nitro → Cloudflare Workers (edge, sem filesystem). Automático via `.github/workflows/deploy.yml` a cada push em `main` (build gera `.output/server/wrangler.json`, `wrangler deploy` publica). HostGator só hospeda o domínio (DNS) — não roda o app (é hospedagem compartilhada sem Node.js). Ver SC-024 em `docs/MELHORIAS-PENDENTES.md` pros secrets necessários (GitHub Actions vs Cloudflare Worker — são coisas diferentes, não confundir)
 - **Path alias:** `@/` → `src/`
 - **Rotas:** nunca editar `routeTree.gen.ts` exceto quando o watcher não está ativo
 - **Banco:** Supabase (`zeiauwvkfgibysayvhxu`, configurado — SC-007). Client browser: `src/lib/supabase.ts`. Client server (service role): `src/lib/supabase.server.ts`, só dentro de `createServerFn`
