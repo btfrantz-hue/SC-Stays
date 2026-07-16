@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   Home, Calendar, Sparkles, TrendingUp, FileText,
   Headphones, DollarSign, BarChart3, Search, ClipboardEdit,
-  Settings, Award, Instagram, Globe, Phone, ShieldCheck, Clock, Heart, CheckCircle2, Mail,
+  Settings, Award, Globe, Phone, ShieldCheck, Clock, Heart, CheckCircle2, Mail,
 } from "lucide-react";
 import {
   Accordion,
@@ -32,6 +32,25 @@ export const Route = createFileRoute("/parceiros")({
 
 const WA_URL = "https://wa.me/5548991822477";
 const WA_PROPOSTA = `${WA_URL}?text=${encodeURIComponent("Olá! Tenho interesse em saber mais sobre a gestão do meu imóvel com a SC Stays.")}`;
+
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -620,7 +639,7 @@ function Landing() {
                 </a>
                 <a href="https://instagram.com/scstayscollection" className="flex items-center gap-4 group">
                   <div className="w-12 h-12 rounded-full border border-gold/50 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-navy transition">
-                    <Instagram className="w-5 h-5" />
+                    <InstagramIcon className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="text-xs tracking-[0.24em] uppercase text-gold">Instagram</div>
