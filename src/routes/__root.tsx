@@ -5,6 +5,7 @@ import {
   createRootRouteWithContext,
   useRouter,
   useLocation,
+  useMatches,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
@@ -16,6 +17,7 @@ const OG_IMAGE = `${SITE_URL}/og-image.jpg`;
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import logoAsset from "@/assets/new-logo-transparent.png";
+import type { ParceirosSectionKey } from "@/lib/parceiros-content";
 import { Menu, X } from "lucide-react";
 
 function NotFoundComponent() {
@@ -119,24 +121,32 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   errorComponent: ErrorComponent,
 });
 
-const PARCEIROS_NAV = [
-  { href: "#problema", label: "O Problema" },
-  { href: "#solucao", label: "A Solução" },
-  { href: "#servicos", label: "O Que Fazemos" },
-  { href: "#processo", label: "Como Funciona" },
-  { href: "#faq", label: "FAQ" },
-  { href: "#contato", label: "Contato" },
+const PARCEIROS_NAV: { href: string; label: string; key: ParceirosSectionKey }[] = [
+  { href: "#problema", label: "O Problema", key: "problema" },
+  { href: "#solucao", label: "A Solução", key: "solucao" },
+  { href: "#servicos", label: "O Que Fazemos", key: "servicos" },
+  { href: "#processo", label: "Como Funciona", key: "processo" },
+  { href: "#faq", label: "FAQ", key: "faq" },
+  { href: "#contato", label: "Contato", key: "contato" },
 ];
 
 function Header() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
+  const matches = useMatches();
+  const parceirosSections = matches.find((m) => m.routeId === "/parceiros")?.loaderData as
+    | Record<ParceirosSectionKey, boolean>
+    | undefined;
 
   // No header on home (has its own logo) or admin routes (own layout)
   if (pathname === "/" || pathname.startsWith("/admin")) return null;
 
   const showFullNav = pathname === "/parceiros";
   const isGuestSide = pathname.startsWith("/imoveis");
+  const visibleNav = parceirosSections
+    ? PARCEIROS_NAV.filter((l) => parceirosSections[l.key])
+    : PARCEIROS_NAV;
+  const showProposta = parceirosSections ? parceirosSections.proposta : true;
 
   return (
     <header className="sticky top-0 z-50 bg-cream/95 backdrop-blur-sm border-b border-border/50">
@@ -149,17 +159,19 @@ function Header() {
         {showFullNav && (
           <>
             <nav className="hidden md:flex items-center gap-8 text-sm text-navy/80">
-              {PARCEIROS_NAV.map((l) => (
+              {visibleNav.map((l) => (
                 <a key={l.href} href={l.href} className="hover:text-gold transition">{l.label}</a>
               ))}
             </nav>
 
-            <a
-              href="#proposta"
-              className="hidden md:inline-flex items-center px-5 py-2.5 text-xs tracking-[0.24em] uppercase bg-navy text-cream hover:bg-navy-deep transition"
-            >
-              Fale Conosco
-            </a>
+            {showProposta && (
+              <a
+                href="#proposta"
+                className="hidden md:inline-flex items-center px-5 py-2.5 text-xs tracking-[0.24em] uppercase bg-navy text-cream hover:bg-navy-deep transition"
+              >
+                Fale Conosco
+              </a>
+            )}
 
             <button
               onClick={() => setOpen((v) => !v)}
@@ -185,7 +197,7 @@ function Header() {
       {showFullNav && open && (
         <div className="md:hidden bg-cream border-b border-border/50 px-6 pb-6 pt-2">
           <nav className="flex flex-col gap-1">
-            {PARCEIROS_NAV.map((l) => (
+            {visibleNav.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
@@ -196,13 +208,15 @@ function Header() {
               </a>
             ))}
           </nav>
-          <a
-            href="#proposta"
-            onClick={() => setOpen(false)}
-            className="mt-5 flex items-center justify-center px-6 py-3 text-xs tracking-[0.24em] uppercase bg-navy text-cream"
-          >
-            Fale Conosco
-          </a>
+          {showProposta && (
+            <a
+              href="#proposta"
+              onClick={() => setOpen(false)}
+              className="mt-5 flex items-center justify-center px-6 py-3 text-xs tracking-[0.24em] uppercase bg-navy text-cream"
+            >
+              Fale Conosco
+            </a>
+          )}
         </div>
       )}
     </header>

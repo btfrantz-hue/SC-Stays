@@ -162,6 +162,7 @@ Trocado o popup nativo de Basic Auth por uma página de login própria (`/admin/
 | 🔒 **Correção de segurança** | As chamadas RPC de server functions (`/_serverFn/...`) **não** passam pelo middleware de página — só pelo pathname `/admin/*`. Isso deixava `listAdminProperties`/`createAdminProperty`/etc. acessíveis diretamente sem nenhuma autenticação, mesmo com o Basic Auth antigo. Corrigido anexando `requireAdminMiddleware` (middleware de função) a cada server function admin individualmente — é essa camada, não o redirect de página, que garante a proteção real. Confirmado com teste automatizado: chamada direta ao endpoint sem sessão agora falha. |
 
 **`[PRECISA DE VOCÊ]`** — trocar `ADMIN_PASSWORD` no `.env` por uma senha forte antes de deploy/compartilhamento (senha atual é de desenvolvimento local).
+BF.:Feito.
 
 ### ✅ SC-010–012 — Painel admin de imóveis (2026-07-14)
 
@@ -228,7 +229,7 @@ Mesmo padrão do SC-021, reaproveitando a tabela `site_sections` (chaves prefixa
 
 `src/lib/parceiros-content.ts` (leitura pública) / `src/lib/parceiros-content.server.ts` (`getAdminParceirosSections`/`saveParceirosSections`, protegidos por `requireAdminMiddleware`).
 
-**Nota:** os links do menu do header (`__root.tsx`) apontam para âncoras (`#problema`, `#faq` etc.) e não sabem se a seção está oculta — se um bloco for desligado, o link correspondente no menu leva a lugar nenhum até a seção voltar a ficar visível. Não corrigido nessa rodada (não foi pedido).
+**✅ Corrigido (2026-07-15):** os links do menu do header (`__root.tsx`) apontavam para âncoras (`#problema`, `#faq` etc.) fixas, sem saber se a seção estava oculta — um bloco desligado no admin deixava o link correspondente do menu levando a lugar nenhum. Agora o `Header` lê o `loaderData` da rota `/parceiros` (via `useMatches()`, procurando a match com `routeId === "/parceiros"`) e filtra `PARCEIROS_NAV`/o botão "Fale Conosco" pelas mesmas flags de `site_sections` que a página usa — menu e conteúdo ficam sempre em sincronia.
 
 ---
 
