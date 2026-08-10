@@ -91,8 +91,8 @@
 
 | Item | O que enviar | Onde aparece |
 |------|-------------|--------------|
-| Métricas reais para `/parceiros` | Taxa de ocupação, aumento de receita %, nota média, nº de imóveis | `/parceiros` seção Resultados (ainda hardcoded — não migrado para o admin) |
-| Depoimentos de proprietários | Nome, cidade, texto sobre gestão | `/parceiros` (seção a criar quando tiver conteúdo) |
+| Métricas reais para `/parceiros` | Taxa de ocupação, aumento de receita %, nota média, nº de imóveis | ✅ Agora é você quem preenche, em `/admin/pagina-parceiros` → Resultados (SC-027) |
+| Depoimentos de proprietários | Nome, cidade, texto sobre gestão | ✅ Agora é você quem cadastra, em `/admin/pagina-parceiros` → Depoimentos (SC-027) |
 | Fotos dos imóveis reais | — | Virá do Supabase Storage (SC-008) |
 
 ---
@@ -341,6 +341,32 @@ Cinco PRs estavam abertos e parados desde julho. Todos foram testados localmente
 
 ---
 
+### ✅ SC-027 — Conteúdo de `/parceiros` no admin (2026-08-10)
+
+O SC-023 tinha deixado `/parceiros` com só a **visibilidade** dos blocos editável — todo o texto seguia hardcoded. Duas pendências deste doc dependiam disso ("Métricas reais para `/parceiros`" e "Depoimentos de proprietários"), ambas paradas desde julho esperando um dev. Agora você preenche sozinho.
+
+| O que | Detalhe |
+|-------|---------|
+| ✅ `parceiros_resultados` | 4 linhas fixas (`icon_key`, `valor`, `label`, `sort_order`) — só edita, não adiciona/remove. Espelha `resultado_cards` |
+| ✅ `parceiros_depoimentos` | Lista dinâmica (`nome`, `cidade`, `texto`, `sort_order`). Separada de `depoimentos`, que é de hóspedes em `/imoveis` — misturar exigiria filtro em toda query |
+| ✅ Chave `parceiros_depoimentos` em `site_sections` | Seção nova; entra **desligada**, porque sem depoimento cadastrado ela ficaria vazia |
+| ✅ `parceiros-content.ts` | `getParceirosSections()` virou `getParceirosContent()`, devolvendo `{ sections, resultados, depoimentos }` |
+| ✅ `parceiros-content.server.ts` | `getAdminParceirosContent`/`saveParceirosContent`, ambos com `requireAdminMiddleware` |
+| ✅ `/admin/pagina-parceiros` | De 73 para ~250 linhas: blocos de edição de Resultados e Depoimentos + a lista de liga/desliga dos demais, um botão "Salvar alterações" |
+| ✅ `__root.tsx` | O `Header` lia o `loaderData` de `/parceiros` como um mapa de booleans direto; com o shape novo passou a ler `.sections`. Entrada nova em `PARCEIROS_NAV` para a âncora `#depoimentos` |
+
+**`valor` é opcional de propósito.** O bloco Resultados de `/parceiros` é qualitativo (ícone + legenda, sem número). Com `valor` vazio a página renderiza igual a antes; preenchendo, o número aparece em destaque acima da legenda. Isso permitiu subir a seção **sem** depender das métricas reais existirem — que era exatamente o que travava esse item.
+
+**Primeira migration versionada.** `supabase/migrations/sc027_parceiros_content.sql`. Até aqui o schema só existia no banco remoto (sc007, sc010, sc021, sc023 foram aplicadas direto), o que é frágil. O arquivo é idempotente.
+
+**⚠️ Ordem obrigatória: aplicar a migration ANTES de publicar.** Sem as tabelas, `getParceirosContent()` devolve listas vazias — a seção Resultados some da página (há guarda de `length > 0`, então não quebra, mas some).
+
+> **`[PRECISA DE VOCÊ]` — aplicar o SQL.** Não dá para criar tabela pelo Claude Code neste projeto: o conector MCP do Supabase está autorizado numa conta que só enxerga o projeto `studio3dapplication`, não o `zeiauwvkfgibysayvhxu`, e a API REST com a service role key faz DML mas não DDL (nenhuma RPC de SQL exposta — verificado). Colar o arquivo no SQL Editor do Supabase resolve. Reautorizar o conector na conta certa também, e passa a valer pras próximas.
+
+**Não verificado em execução:** `/parceiros` e `/admin/pagina-parceiros` com dados reais, porque as tabelas ainda não existem. Cobertos por `tsc --noEmit` limpo, `eslint` sem erros e `npm run build` passando. O roteiro de teste está no plano da sessão.
+
+---
+
 ### ✅ GitHub — Boas práticas (já implementado)
 
 | O que | Arquivo | Detalhe |
@@ -379,8 +405,9 @@ _Revisado em 2026-08-09 — vários itens que apareciam como pendentes já estav
 | 🔴 Alta | Apontar `scstays.com.br` pro Vercel — hoje o domínio serve HTML estático de 09/07 e todas as rotas novas dão 404 | Você (adiado por escolha sua nesta rodada) |
 | 🔴 Alta | Subir as fotos reais de cada imóvel em `/admin/imoveis` — o upload já existe (SC-008), falta o conteúdo | Você |
 | 🟡 Média | Branch protection no GitHub | Você (5 min no painel) |
+| 🔴 Alta | Aplicar `supabase/migrations/sc027_parceiros_content.sql` no SQL Editor — **antes** de publicar | Você |
 | 🟡 Média | Preencher conteúdo real de Resultados/Avaliações/Depoimentos | Você mesmo, em `/admin/pagina-imoveis` |
-| 🟡 Média | Métricas reais de `/parceiros` | Você coleta → Dev implementa (ainda não é admin-editável) |
+| 🟡 Média | Preencher métricas e depoimentos de proprietários | Você mesmo, em `/admin/pagina-parceiros` (SC-027) |
 | 🟢 Baixa | OG Image 1200×630 de verdade — o `public/og-image.jpg` atual é cópia byte a byte do `hero-living.jpg` | Designer |
 | 🟢 Baixa | Seção "Quem Somos" | Você envia foto/bio → Dev implementa |
 | 🟢 Baixa | Ativar o GA4 no código (conta já criada — falta preencher `VITE_GA_ID` nos secrets) | Dev |

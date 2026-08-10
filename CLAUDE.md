@@ -24,9 +24,29 @@ Não existem mais feature flags estáticas para as seções de `/imoveis` — tu
 
 Leitura pública: `src/lib/site-content.ts` (`getImoveisPageContent`, client anon, RLS `select using (true)`). Escrita: `src/lib/site-content.server.ts` (`getAdminSiteConfig`/`saveSiteConfig`, `service_role`, protegidos por `requireAdminMiddleware`).
 
-## Visibilidade dos blocos da página /parceiros
+## Conteúdo da página /parceiros (admin-editável)
 
-Reaproveita a mesma tabela `site_sections`, com chaves prefixadas `parceiros_*` (12 blocos, todo o texto/conteúdo continua hardcoded em `parceiros.tsx` — só a visibilidade é admin-editável). **O hero é sempre visível, não tem chave/switch.** Editar em `/admin/pagina-parceiros`. Leitura pública: `src/lib/parceiros-content.ts` (`getParceirosSections`). Escrita: `src/lib/parceiros-content.server.ts`. Lista de chaves/labels: `PARCEIROS_SECTION_KEYS`/`PARCEIROS_SECTION_LABELS` em `parceiros-content.ts` — **novo bloco na página = adicionar a chave nesses dois lugares + inserir a linha em `site_sections` via migration + envolver o JSX com `{sections.<key> && (...)}`.**
+Visibilidade dos 13 blocos: mesma tabela `site_sections`, com chaves prefixadas `parceiros_*`. **O hero é sempre visível, não tem chave/switch.**
+
+| Tabela | Seção | Add/remove? |
+|--------|-------|-------------|
+| `site_sections` (chaves `parceiros_*`) | visibilidade dos 13 blocos | — |
+| `parceiros_resultados` | 4 cards do bloco Resultados | não (linhas fixas, só ícone/valor/legenda editáveis) |
+| `parceiros_depoimentos` | depoimentos de proprietários | sim (admin adiciona/remove) |
+
+`valor` em `parceiros_resultados` é **opcional**: vazio renderiza só ícone + legenda; preenchido mostra o número acima. Os demais blocos continuam com texto hardcoded em `parceiros.tsx` — só a visibilidade é editável.
+
+Editar em `/admin/pagina-parceiros`. Leitura pública: `src/lib/parceiros-content.ts` (`getParceirosContent`, devolve `{ sections, resultados, depoimentos }`). Escrita: `src/lib/parceiros-content.server.ts` (`getAdminParceirosContent`/`saveParceirosContent`, protegidos por `requireAdminMiddleware`).
+
+**Gotcha:** o `Header` em `__root.tsx` lê o `loaderData` de `/parceiros` via `useMatches()` para filtrar o menu — mudar o shape do retorno do loader quebra o header se não for ajustado junto.
+
+**Novo bloco na página** = adicionar a chave em `PARCEIROS_SECTION_KEYS`/`PARCEIROS_SECTION_LABELS` + inserir a linha em `site_sections` via migration + envolver o JSX com `{sections.<key> && (...)}`.
+
+## Migrations
+
+`supabase/migrations/*.sql`, criado no SC-027. **As migrations anteriores (sc007, sc010, sc021, sc023) não estão versionadas** — foram aplicadas direto no banco remoto e só existem lá. Escrever toda migration nova nessa pasta, idempotente.
+
+Aplicar exige o SQL Editor do Supabase ou o MCP autorizado no projeto certo: a API REST com a service role key faz DML, mas **não DDL**.
 
 ---
 
@@ -60,7 +80,7 @@ Reaproveita a mesma tabela `site_sections`, com chaves prefixadas `parceiros_*` 
 | `/admin/imoveis/novo` | `routes/admin.imoveis.novo.tsx` | Criar imóvel |
 | `/admin/imoveis/$id` | `routes/admin.imoveis.$id.tsx` | Editar imóvel + visibilidade por campo |
 | `/admin/pagina-imoveis` | `routes/admin.pagina-imoveis.tsx` | Visibilidade e conteúdo de Catálogo/Resultados/Avaliações/Depoimentos |
-| `/admin/pagina-parceiros` | `routes/admin.pagina-parceiros.tsx` | Visibilidade dos 12 blocos de `/parceiros` (hero sempre visível) |
+| `/admin/pagina-parceiros` | `routes/admin.pagina-parceiros.tsx` | Conteúdo de Resultados/Depoimentos + visibilidade dos 13 blocos de `/parceiros` (hero sempre visível) |
 | `/admin/leads` | `routes/admin.leads.tsx` | Log + indicadores de propostas (`proposal_leads`) e cliques de WhatsApp (`whatsapp_clicks`), export CSV |
 
 ## Visibilidade de campos por imóvel
@@ -83,4 +103,4 @@ Ao mexer em exclusão de imóvel/foto, lembrar que **Storage não tem cascade**:
 - Imóveis: migrados para Supabase (`src/lib/mock-properties.ts` removido)
 - Imagens dos imóveis: vêm do Supabase Storage (bucket `property-images`, SC-008). `src/lib/property-image-fallback.ts` só é usado por imóvel que ainda **não** tem foto — quando todos tiverem, o arquivo e os 3 assets podem sair
 - Resultados/Avaliações/Depoimentos de `/imoveis`: migrados para Supabase, admin-editáveis (ver seção acima)
-- `/parceiros`: todo o texto continua hardcoded no componente; só a visibilidade dos blocos é admin-editável (ver seção acima)
+- `/parceiros`: Resultados e Depoimentos de proprietários migrados para o Supabase, admin-editáveis (SC-027). O texto dos demais blocos continua hardcoded no componente; deles só a visibilidade é editável (ver seção acima)
