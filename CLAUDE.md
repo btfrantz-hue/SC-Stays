@@ -66,6 +66,13 @@ Reaproveita a mesma tabela `site_sections`, com chaves prefixadas `parceiros_*` 
 ## Visibilidade de campos por imóvel
 Coluna `properties.visible_fields` (jsonb) guarda overrides por campo (`{"amenities": false}` = oculto; chave ausente/`true` = visível). Campos controláveis definidos em `src/lib/property-fields.ts` (`CONTROLLABLE_FIELDS`) — só inclui campos que o catálogo/detalhe realmente renderizam. O admin (`src/components/admin/property-form.tsx`) mostra um checkbox "Visível no site" ao lado de cada campo controlável. `/imoveis` e `/imoveis/$slug` usam `isFieldVisible()` para decidir o que renderizar.
 
+## Fotos dos imóveis (SC-008)
+Bucket público `property-images` no Supabase Storage; metadados na tabela `property_images` (`storage_path`, `is_cover`, `sort_order`). Constantes e helpers compartilhados em `src/lib/property-images.ts` (sem imports server-only — é usado pelo catálogo público **e** pelo admin).
+
+**Upload não passa bytes pela server function:** o admin chama `createPropertyImageUploadUrl` (protegida), o browser faz `uploadToSignedUrl` direto no Storage e depois registra o caminho com `addPropertyImage`. O path é sempre gerado no servidor (`<property_id>/<uuid>.<ext>`) — nunca usar o nome de arquivo enviado pelo usuário. UI em `src/components/admin/property-images-manager.tsx`, renderizada **fora** do `<form>` em `admin.imoveis.$id.tsx` porque cada ação salva na hora.
+
+Ao mexer em exclusão de imóvel/foto, lembrar que **Storage não tem cascade**: apagar a linha não apaga o arquivo. `deleteAdminProperty` e `deletePropertyImage` removem os objetos explicitamente.
+
 ## Captura de leads
 - `proposal_leads` — envios do formulário "Receba uma proposta" (`/parceiros`), via `submitProposalLead` (`src/lib/leads.server.ts`)
 - `whatsapp_clicks` — cliques em qualquer botão de WhatsApp do site, via `trackWhatsappClick` (`src/lib/track-whatsapp-click.ts`) → `logWhatsappClick`. Novo ponto de CTA de WhatsApp = sempre adicionar `onClick={() => trackWhatsappClick({ page, button, propertySlug? })}`
@@ -74,6 +81,6 @@ Coluna `properties.visible_fields` (jsonb) guarda overrides por campo (`{"amenit
 
 ## Dados mock
 - Imóveis: migrados para Supabase (`src/lib/mock-properties.ts` removido)
-- Imagens dos imóveis: `src/lib/property-image-fallback.ts` — fallback local temporário até o Storage bucket existir (SC-008)
+- Imagens dos imóveis: vêm do Supabase Storage (bucket `property-images`, SC-008). `src/lib/property-image-fallback.ts` só é usado por imóvel que ainda **não** tem foto — quando todos tiverem, o arquivo e os 3 assets podem sair
 - Resultados/Avaliações/Depoimentos de `/imoveis`: migrados para Supabase, admin-editáveis (ver seção acima)
 - `/parceiros`: todo o texto continua hardcoded no componente; só a visibilidade dos blocos é admin-editável (ver seção acima)

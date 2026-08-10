@@ -65,7 +65,7 @@
 | ✅ `/imoveis` | `routes/imoveis.tsx` | Catálogo com grid de cards; slider de fotos nos cards (setas + dots + contador); sub-nav sticky; **dados vêm do Supabase** (`listActiveProperties`) |
 | ✅ `/imoveis/$slug` | `routes/imoveis.$slug.tsx` | Detalhe com carrossel (shadcn Carousel), stats, amenidades, CTA WhatsApp pré-preenchido com nome do imóvel; **dados vêm do Supabase** (`getActiveProperty`) |
 | ✅ Dados reais | Tabela `properties` no Supabase | Os 3 imóveis que antes eram mock (`mock-properties.ts`, removido) agora são registros reais em `status = 'active'` |
-| ⏳ Fotos reais | `src/lib/property-image-fallback.ts` | **Temporário**: todo imóvel usa as mesmas 3 imagens locais (`hero-living`, `bedroom`, `coast`) até o bucket do Storage existir (SC-008) |
+| ✅ Fotos do Storage | `src/lib/property-images.ts` | Upload e ordenação por imóvel no admin (SC-008). `property-image-fallback.ts` só entra pra imóvel que ainda **não** tem foto |
 
 ### Seções de prova social em `/imoveis` (2026-07-15 — migradas para o Supabase + admin)
 
@@ -179,18 +179,30 @@ CRUD via server functions (`src/lib/properties.server.ts`, service role, ignora 
 
 **Controle de visibilidade por campo (pedido extra, 2026-07-14):** cada imóvel tem uma coluna `visible_fields` (jsonb). No formulário admin (`src/components/admin/property-form.tsx`), os campos que aparecem publicamente (descrição curta, bairro, quartos, banheiros, hóspedes, descrição completa, comodidades) têm um checkbox "Visível no site" ao lado do texto — desmarcar oculta o campo em `/imoveis` e `/imoveis/$slug` sem apagar o valor salvo. Testado ponta a ponta com Playwright (editar → desmarcar → salvar → conferir que some do catálogo → reverter).
 
-### ⏳ SC-008 — Storage de imagens (próximo passo técnico)
+### ✅ SC-008 — Storage de imagens dos imóveis (2026-08-09)
 
-Bucket `property-images` (público) ainda não criado. Até lá, todo imóvel usa o fallback local (ver tabela acima). Ver `docs/SC-000-diagnostico.md` seção 6.
+**O diagnóstico era maior que "falta o bucket".** A tabela `property_images` existia desde o SC-007, mas **não era lida nem escrita em nenhuma linha do código** — `public-properties.ts` colava `FALLBACK_IMAGES` em todo registro, nas duas funções. Então todo imóvel do catálogo mostrava as mesmas 3 fotos genéricas.
 
-**Levantamento de 2026-08-09 — o buraco é maior do que "falta o bucket".** A tabela `property_images` existe no banco desde o SC-007, mas **não é lida nem escrita em lugar nenhum do código** (`grep property_images src/` não retorna nada). `src/lib/public-properties.ts` simplesmente cola `FALLBACK_IMAGES` em todo registro, nas duas funções. Então o trabalho é:
+| O que | Detalhe |
+|-------|---------|
+| ✅ Bucket `property-images` | Criado: público, limite de 5 MB por arquivo, MIME restrito a `image/jpeg`, `image/png`, `image/webp` |
+| ✅ Sem migration de policy | Bucket público ⇒ leitura via URL pública sem policy; escrita só por `service_role`, que ignora RLS. Não precisou de SQL |
+| ✅ `src/lib/property-images.ts` | Novo. Constantes do bucket, limites, `propertyImageUrl()`, `sortPropertyImages()` (capa primeiro, depois `sort_order`) e `imageExtension()`. Sem imports server-only — é usado pelo catálogo público e pelo admin |
+| ✅ Server functions em `properties.server.ts` | `listAdminPropertyImages`, `createPropertyImageUploadUrl`, `addPropertyImage`, `deletePropertyImage`, `setPropertyImageCover`, `reorderPropertyImages` — todas com `.middleware([requireAdminMiddleware])` |
+| ✅ `src/components/admin/property-images-manager.tsx` | Novo. Upload múltiplo, grid com preview, reordenar (setas), definir capa (estrela) e remover (com `AlertDialog` de confirmação) |
+| ✅ `admin.imoveis.$id.tsx` | Renderiza o gerenciador **fora** do `<form>` — cada ação de foto salva na hora, os campos de texto só no "Salvar imóvel" |
+| ✅ `public-properties.ts` | `PUBLIC_COLUMNS` faz join com `property_images`; `FALLBACK_IMAGES` virou fallback só pra imóvel **sem** foto. `imoveis.tsx` e `imoveis.$slug.tsx` não mudaram — já consumiam `property.images: string[]` |
+| ✅ `deleteAdminProperty` | Passou a apagar os objetos do Storage antes de excluir o imóvel. O `on delete cascade` cuida das linhas de `property_images`, mas Storage não tem cascade — os arquivos ficariam órfãos pra sempre |
 
-1. Criar o bucket + policies (leitura pública, escrita só `service_role`)
-2. Upload no admin — `src/components/admin/property-form.tsx` ganha seção de imagens (múltiplas, reordenar, remover); server functions novas em `properties.server.ts`, todas com `.middleware([requireAdminMiddleware])`
-3. Leitura pública — join com `property_images`; `FALLBACK_IMAGES` vira fallback só pra imóvel **sem** foto, em vez de valor fixo. `imoveis.tsx` e `imoveis.$slug.tsx` já consomem `property.images: string[]` e não mudam
-4. Depois de migrar as fotos, remover a marcação `TEMPORARY` de `property-image-fallback.ts`
+**Bytes não passam pela server function.** O admin pede uma signed upload URL (`createPropertyImageUploadUrl`, protegida), o browser faz o PUT direto no Supabase Storage e depois só registra o caminho (`addPropertyImage`). O caminho é gerado no servidor (`<property_id>/<uuid>.<ext>`) — o nome do arquivo enviado pelo usuário nunca entra num path de storage. Evita empurrar payloads de 5 MB pelo runtime SSR e mantém a escrita autenticada.
 
-**Bloqueio atual:** o conector MCP do Supabase respondeu `You do not have permission to perform this action` (2026-08-09). Sem ele não dá pra criar bucket nem aplicar migration pelo Claude Code — ou reautorizar o conector nas configurações do claude.ai, ou criar o bucket pelo painel do Supabase.
+**Fotos só na tela de edição.** O upload precisa do id do imóvel pra montar o path, e na tela de criação ele ainda não existe. `/admin/imoveis/novo` mostra um aviso explicando que as fotos entram depois de salvar.
+
+**Testado contra o banco real (camada de dados e catálogo público):** signed URL gerada → upload dos bytes → linha criada → URL pública devolveu 200 `image/jpeg` com os bytes idênticos aos enviados → `/imoveis` e `/imoveis/$slug` passaram a renderizar a foto do Storage no lugar do fallback, enquanto os outros dois imóveis (sem foto) continuaram no fallback (conferido que a página de detalhe emite **uma** `<img>` de imóvel, a real). Também verificado que o join sai limpo com a **chave anon** — a RLS pública permite. A imagem de teste foi removida do banco e do bucket depois; zero resíduo, bucket vazio.
+
+**⚠️ Não verificado em execução: a tela do admin.** `/admin/imoveis/$id` exige sessão, e nesta sessão de trabalho não havia browser automatizado disponível. O que garante a tela: `tsc --noEmit` limpo, `eslint` sem erros nos arquivos novos, `npm run build` passando, e o fato de o loader/`router.invalidate()`/`AlertDialog` seguirem exatamente o padrão já em produção nas outras telas admin. **Vale um clique manual** em `/admin/imoveis/<imóvel>` na primeira vez que subir fotos: enviar 2 fotos, trocar a capa, reordenar e remover uma.
+
+**`[PRECISA DE VOCÊ]`** — subir as fotos reais de cada imóvel em `/admin/imoveis/<imóvel>`. Enquanto um imóvel não tiver nenhuma, ele continua no fallback genérico. Quando todos tiverem, `src/lib/property-image-fallback.ts` e os 3 assets podem ser removidos.
 
 ### ✅ SC-019 — Captura de leads + indicadores de performance (2026-07-15)
 
@@ -365,7 +377,7 @@ _Revisado em 2026-08-09 — vários itens que apareciam como pendentes já estav
 |-----------|------|------|
 | 🔴 Alta | Cadastrar `VERCEL_TOKEN` no GitHub e desconectar a integração Git do Vercel (SC-025) | Você (5 min no painel) |
 | 🔴 Alta | Apontar `scstays.com.br` pro Vercel — hoje o domínio serve HTML estático de 09/07 e todas as rotas novas dão 404 | Você (adiado por escolha sua nesta rodada) |
-| 🔴 Alta | Storage bucket + fotos reais dos imóveis (SC-008) — hoje todo imóvel mostra as mesmas 3 fotos genéricas | Dev (bloqueado: MCP do Supabase sem permissão) |
+| 🔴 Alta | Subir as fotos reais de cada imóvel em `/admin/imoveis` — o upload já existe (SC-008), falta o conteúdo | Você |
 | 🟡 Média | Branch protection no GitHub | Você (5 min no painel) |
 | 🟡 Média | Preencher conteúdo real de Resultados/Avaliações/Depoimentos | Você mesmo, em `/admin/pagina-imoveis` |
 | 🟡 Média | Métricas reais de `/parceiros` | Você coleta → Dev implementa (ainda não é admin-editável) |
