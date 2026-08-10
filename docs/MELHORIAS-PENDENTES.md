@@ -130,11 +130,9 @@ Dado disponível: 10 anos de experiência no mercado.
 
 ### 🎨 12. Imagem OG (`public/og-image.jpg`)
 
-O código aponta para `https://www.scstays.com.br/og-image.jpg` — arquivo ainda não existe.
+O arquivo **existe**, mas é o provisório: cópia byte a byte de `src/assets/hero-living.jpg` (mesmos 165.028 bytes, mesma data de modificação). Serve pra não quebrar o preview em redes sociais, mas não é uma peça de marca — é uma foto de sala sem logo, sem tagline e nas proporções erradas.
 
-**Spec para o designer:** 1200 × 630 px · paleta cream / verde `#054839` / dourado `#D3AF37` (nova identidade, ver "Identidade visual — rebranding" acima) · logo + tagline + foto ao fundo · salvar em `public/og-image.jpg`
-
-**Provisório:** `Copy-Item src\assets\hero-living.jpg public\og-image.jpg`
+**Spec para o designer:** 1200 × 630 px · paleta cream / verde `#054839` / dourado `#D3AF37` (nova identidade, ver "Identidade visual — rebranding" acima) · logo + tagline + foto ao fundo · substituir `public/og-image.jpg`
 
 ---
 
@@ -185,6 +183,15 @@ CRUD via server functions (`src/lib/properties.server.ts`, service role, ignora 
 
 Bucket `property-images` (público) ainda não criado. Até lá, todo imóvel usa o fallback local (ver tabela acima). Ver `docs/SC-000-diagnostico.md` seção 6.
 
+**Levantamento de 2026-08-09 — o buraco é maior do que "falta o bucket".** A tabela `property_images` existe no banco desde o SC-007, mas **não é lida nem escrita em lugar nenhum do código** (`grep property_images src/` não retorna nada). `src/lib/public-properties.ts` simplesmente cola `FALLBACK_IMAGES` em todo registro, nas duas funções. Então o trabalho é:
+
+1. Criar o bucket + policies (leitura pública, escrita só `service_role`)
+2. Upload no admin — `src/components/admin/property-form.tsx` ganha seção de imagens (múltiplas, reordenar, remover); server functions novas em `properties.server.ts`, todas com `.middleware([requireAdminMiddleware])`
+3. Leitura pública — join com `property_images`; `FALLBACK_IMAGES` vira fallback só pra imóvel **sem** foto, em vez de valor fixo. `imoveis.tsx` e `imoveis.$slug.tsx` já consomem `property.images: string[]` e não mudam
+4. Depois de migrar as fotos, remover a marcação `TEMPORARY` de `property-image-fallback.ts`
+
+**Bloqueio atual:** o conector MCP do Supabase respondeu `You do not have permission to perform this action` (2026-08-09). Sem ele não dá pra criar bucket nem aplicar migration pelo Claude Code — ou reautorizar o conector nas configurações do claude.ai, ou criar o bucket pelo painel do Supabase.
+
 ### ✅ SC-019 — Captura de leads + indicadores de performance (2026-07-15)
 
 Duas tabelas no Supabase, RLS habilitado e sem policy (só `service_role` acessa; inserts/leituras passam por server functions em `src/lib/leads.server.ts`):
@@ -233,9 +240,11 @@ Mesmo padrão do SC-021, reaproveitando a tabela `site_sections` (chaves prefixa
 
 ---
 
-### 🔧 SC-024 — Deploy em produção via Cloudflare Workers (2026-07-15)
+### ⚠️ SC-024 — Deploy via Cloudflare Workers (2026-07-15) — **SUBSTITUÍDO PELO SC-025**
 
-HostGator (hospedagem compartilhada) não roda esse projeto — precisa de um servidor, não só arquivos estáticos (ver decisão registrada em conversa). Caminho escolhido: **Cloudflare Workers** (grátis, é o alvo de build que o projeto já usa por padrão via `@lovable.dev/vite-tanstack-config`), com deploy automático a cada push em `main`.
+> **Histórico.** Este bloco descreve a plataforma antiga. Desde 2026-08-09 o alvo de deploy é o **Vercel** — ver SC-025 logo abaixo. Fica registrado porque os bugs resolvidos aqui explicam decisões que ainda valem (pipeline único, secret de build vs. de runtime) e porque a análise de "por que HostGator não serve" continua válida.
+
+HostGator (hospedagem compartilhada) não roda esse projeto — precisa de um servidor, não só arquivos estáticos (ver decisão registrada em conversa). Caminho escolhido **na época**: **Cloudflare Workers** (grátis, é o alvo de build que o projeto já usa por padrão via `@lovable.dev/vite-tanstack-config`), com deploy automático a cada push em `main`.
 
 | O que | Detalhe |
 |-------|---------|
@@ -252,7 +261,49 @@ HostGator (hospedagem compartilhada) não roda esse projeto — precisa de um se
 
 **✅ Corrigido (2026-07-16):** primeiro deploy publicado com sucesso, mas login e páginas internas do admin quebravam com `Error: supabaseUrl is required` (visível no console do navegador). Causa: `src/lib/supabase.server.ts` lia `process.env.VITE_SUPABASE_URL` (lookup em **runtime**), mas essa variável só existia como secret de **build** no GitHub Actions (`VITE_*` só é injetada durante `npm run build`, não fica disponível como variável do Worker no Cloudflare em tempo de requisição) — nunca foi cadastrada como variável do Worker. O client público (`src/lib/supabase.ts`) já usava `import.meta.env.VITE_SUPABASE_URL` corretamente (inlinado pelo Vite em build time). Corrigido trocando `supabase.server.ts` pro mesmo padrão (`import.meta.env` em vez de `process.env` pra essa variável específica) — confirmado no bundle gerado que o valor fica embutido como string literal, sem precisar de nenhuma variável nova no Cloudflare. `SUPABASE_SERVICE_ROLE_KEY` continua corretamente como `process.env` (secret real, não pode ser inlinado no bundle público).
 
-**✅ Corrigido (2026-07-16):** mesmo com `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`ADMIN_SESSION_SECRET` cadastrados no Worker, o login continuava falhando. Causa raiz (achada lendo o handler gerado pelo Nitro em `.output/server/index.mjs`): o Cloudflare só copia o `env` do Worker (onde ficam as variáveis do dashboard) pra `globalThis.__env__` — nunca pra `process.env`. Por padrão, com só a flag `nodejs_compat`, `process.env` no Cloudflare só contém `NODE_ENV`; pra ele refletir as vars/secrets do Worker é preciso a flag adicional `nodejs_compat_populate_process_env` (feature própria do Cloudflare, exige `compatibility_date` ≥ 2025-04-01 — já temos). O Nitro não expõe essa flag por padrão nem tem opção documentada pra ela; setada via `nitro.cloudflare.wrangler.compatibility_flags` em `vite.config.ts` (opção não tipada no `@lovable.dev/vite-tanstack-config`, mas repassada de verdade pro nitro — usado `@ts-expect-error` documentado). Confirmado no `wrangler.json` gerado que as duas flags (`nodejs_compat` + `nodejs_compat_populate_process_env`) ficam presentes.
+**✅ Corrigido (2026-07-16, hoje irrelevante — era específico do Cloudflare):** mesmo com `ADMIN_USERNAME`/`ADMIN_PASSWORD`/`ADMIN_SESSION_SECRET` cadastrados no Worker, o login continuava falhando. Causa raiz (achada lendo o handler gerado pelo Nitro em `.output/server/index.mjs`): o Cloudflare só copia o `env` do Worker (onde ficam as variáveis do dashboard) pra `globalThis.__env__` — nunca pra `process.env`. Por padrão, com só a flag `nodejs_compat`, `process.env` no Cloudflare só contém `NODE_ENV`; pra ele refletir as vars/secrets do Worker é preciso a flag adicional `nodejs_compat_populate_process_env` (feature própria do Cloudflare, exige `compatibility_date` ≥ 2025-04-01 — já temos). O Nitro não expõe essa flag por padrão nem tem opção documentada pra ela; setada via `nitro.cloudflare.wrangler.compatibility_flags` em `vite.config.ts` (opção não tipada no `@lovable.dev/vite-tanstack-config`, mas repassada de verdade pro nitro — usado `@ts-expect-error` documentado). Confirmado no `wrangler.json` gerado que as duas flags (`nodejs_compat` + `nodejs_compat_populate_process_env`) ficam presentes.
+
+---
+
+### ✅ SC-025 — Migração do deploy para o Vercel (2026-08-09, substitui o SC-024)
+
+**O que aconteceu.** Em 2026-07-22 uma migração pro Vercel foi iniciada e ficou pela metade, **sem commit**: `vite.config.ts` com o preset trocado, `vercel.json` novo e `.vercel/` linkado no disco, mas o `deploy.yml` ainda publicando no Cloudflare. Nesse estado, qualquer push em `main` quebraria o deploy — o build com preset `vercel` não gera o `wrangler.json` que o Wrangler procura. O projeto ficou parado nessa inconsistência por 18 dias. Esta entrada fecha isso.
+
+**Por que Vercel.** O deploy já estava no ar e funcionando lá, e a plataforma resolve nativamente o problema que custou mais tempo no Cloudflare: `process.env` é populado pelo runtime sem precisar de flag de compatibilidade nenhuma. O hack `nodejs_compat_populate_process_env` (ver SC-024) foi removido junto.
+
+| O que | Detalhe |
+|-------|---------|
+| ✅ `vite.config.ts` | `nitro.preset: "vercel"`; bloco `cloudflare.wrangler` (e o `@ts-expect-error` que ele exigia) removidos. O build passa a escrever `.vercel/output` (Build Output API v3) em vez de `.output/server/` |
+| ✅ `.github/workflows/deploy.yml` | Só o último step mudou. `npm install -g npm@11.13.0` → `npm ci` → `npm run build` (com as `VITE_*` dos GitHub Secrets) continuam iguais; o step do `cloudflare/wrangler-action` virou `npx vercel@latest deploy --prebuilt --prod`. Como o preset do Nitro já produz `.vercel/output`, o `--prebuilt` sobe o que a Action buildou — os builders do Vercel não rodam |
+| ✅ `vercel.json` | `{"framework": "tanstack-start"}` |
+| ✅ `.gitignore` | + `.vercel` (contém o link do projeto, não deve ir pro repo) |
+| ✅ Verificado localmente | `npm run build` gera `.vercel/output/config.json` + `functions/__server.func/`, e **não** gera `.output/` nem `wrangler.json`. `tsc --noEmit` limpo |
+| ⏳ **`[PRECISA DE VOCÊ]`** `VERCEL_TOKEN` | Vercel → Account Settings → Tokens (escopo no time `team_Ws2LQbQplAcIxtcLUC1v4Ewj`) → cadastrar em `btfrantz-hue/SC-Stays` → Settings → Secrets and variables → Actions |
+| ⏳ **`[PRECISA DE VOCÊ]`** Pipeline único | Vercel → projeto `graphic-to-site-glow` → Settings → Git: **se estiver conectado ao repositório, desconectar.** Mesma armadilha que o SC-024 já teve que resolver no Cloudflare (Workers Builds rodando em paralelo com o `deploy.yml`) |
+| ⏳ **`[PRECISA DE VOCÊ]`** Higiene | Remover os secrets `CLOUDFLARE_API_TOKEN`/`CLOUDFLARE_ACCOUNT_ID` do GitHub e apagar o Worker `crobertofrantz-netizen-graphic-to-site-glow` no painel da Cloudflare (opcional, só limpeza) |
+
+**Variáveis de ambiente — build vs. runtime (a distinção que gerou os dois bugs do SC-024):**
+
+| Tipo | Quais | Onde ficam | Por quê |
+|------|-------|-----------|---------|
+| **Build** | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_GA_ID` | GitHub Secrets (usados no step de build do `deploy.yml`) | O Vite inlina como string literal no bundle; não existem mais em tempo de requisição |
+| **Runtime** | `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET` | Env do projeto no painel do Vercel (escopo Production) | São lidos via `process.env` a cada requisição. Secrets de verdade — nunca podem ser inlinados no bundle |
+
+`ADMIN_SESSION_SECRET` já está configurado no Vercel — verificado em 2026-08-09: `/admin` responde **303 → /admin/login** em vez de 500, e `admin-session.ts` lança se a var faltar. Os outros três só um login de verdade confirma.
+
+`src/lib/supabase.server.ts` continua com `import.meta.env.VITE_SUPABASE_URL` (build) + `process.env.SUPABASE_SERVICE_ROLE_KEY` (runtime) — a assimetria agora está comentada no próprio arquivo, não só aqui.
+
+**Estado verificado da aplicação no Vercel (2026-08-09):** `/`, `/parceiros`, `/imoveis` e `/admin/login` respondem 200; `/imoveis` renderiza os 3 imóveis reais vindos do Supabase (`apartamento-beira-mar-ingleses`, `casa-lagoa-da-conceicao`, `flat-executivo-centro-florianopolis`).
+
+---
+
+### 🔴 Domínio `scstays.com.br` — ainda não aponta pra aplicação
+
+Verificado em 2026-08-09: `www.scstays.com.br` responde `Server: Apache` (HostGator), servindo um **HTML estático de 2026-07-09** — ainda com `lang="en"`, anterior ao rebranding e a todo o trabalho de julho. `/imoveis`, `/parceiros` e `/admin/login` retornam **404**.
+
+Ou seja: catálogo, painel admin, captura de leads e SEO existem, funcionam, mas **estão invisíveis pra quem acessa o site pelo domínio real**. Enquanto o DNS não for apontado pro Vercel, a aplicação só existe na URL da plataforma.
+
+`[PRECISA DE VOCÊ]` — decisão adiada por escolha sua nesta rodada. Quando for a hora: adicionar o domínio em Vercel → projeto → Settings → Domains e trocar os registros DNS no painel onde o domínio está hoje.
 
 ---
 
@@ -273,30 +324,32 @@ HostGator (hospedagem compartilhada) não roda esse projeto — precisa de um se
 - ✅ Require branches to be up to date before merging
 - ✅ Do not allow bypassing the above settings
 
-**Secrets para deploy** — `Settings → Secrets and variables → Actions` (adicionar quando Supabase estiver configurado):
+**Secrets para deploy** — `Settings → Secrets and variables → Actions`. Só as de **build** vão aqui (ver a tabela build vs. runtime no SC-025):
 ```
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-SUPABASE_SERVICE_ROLE_KEY
-ADMIN_USERNAME
-ADMIN_PASSWORD
-ADMIN_SESSION_SECRET
+VITE_SUPABASE_URL        ✅ cadastrado
+VITE_SUPABASE_ANON_KEY   ✅ cadastrado
+VITE_GA_ID               ⏳ opcional, ativa o GA4
+VERCEL_TOKEN             ⏳ PENDENTE — sem ele o deploy não roda
 ```
+`SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` e `ADMIN_SESSION_SECRET` **não** vão no GitHub — são de runtime e ficam no painel do Vercel.
 
 ---
 
 ## Resumo executivo das pendências
 
+_Revisado em 2026-08-09 — vários itens que apareciam como pendentes já estavam feitos._
+
 | Prioridade | Item | Quem |
 |-----------|------|------|
-| 🔴 Alta | Configurar secrets de deploy no GitHub + no Worker (SC-024) | Você — passo a passo na conversa |
-| 🔴 Alta | Trocar senha do admin por uma forte antes de deploy (`.env` → `ADMIN_PASSWORD`) | Você |
-| 🔴 Alta | Storage bucket + fotos reais dos imóveis (SC-008) | Dev |
-| 🟡 Média | Apontar domínio `scstays.com.br` (HostGator) pra Cloudflare | Você + Dev, depois do 1º deploy funcionar |
+| 🔴 Alta | Cadastrar `VERCEL_TOKEN` no GitHub e desconectar a integração Git do Vercel (SC-025) | Você (5 min no painel) |
+| 🔴 Alta | Apontar `scstays.com.br` pro Vercel — hoje o domínio serve HTML estático de 09/07 e todas as rotas novas dão 404 | Você (adiado por escolha sua nesta rodada) |
+| 🔴 Alta | Storage bucket + fotos reais dos imóveis (SC-008) — hoje todo imóvel mostra as mesmas 3 fotos genéricas | Dev (bloqueado: MCP do Supabase sem permissão) |
+| 🟡 Média | Limpar os 5 PRs abertos do Dependabot (1 com CI vermelho) | Dev |
 | 🟡 Média | Branch protection no GitHub | Você (5 min no painel) |
 | 🟡 Média | Preencher conteúdo real de Resultados/Avaliações/Depoimentos | Você mesmo, em `/admin/pagina-imoveis` |
 | 🟡 Média | Métricas reais de `/parceiros` | Você coleta → Dev implementa (ainda não é admin-editável) |
-| 🟢 Baixa | Google Analytics (GA4) | Você cria conta → Dev ativa |
-| 🟢 Baixa | Google Business Profile | Você |
+| 🟢 Baixa | OG Image 1200×630 de verdade — o `public/og-image.jpg` atual é cópia byte a byte do `hero-living.jpg` | Designer |
 | 🟢 Baixa | Seção "Quem Somos" | Você envia foto/bio → Dev implementa |
-| 🟢 Baixa | OG Image 1200×630 | Designer |
+| 🟢 Baixa | Ativar o GA4 no código (conta já criada — falta preencher `VITE_GA_ID` nos secrets) | Dev |
+
+**Já resolvidos, saíram da lista:** secrets de build no GitHub (cadastrados e testados no SC-024/025) · senha forte do admin (trocada) · conta do Google Analytics (criada) · Google Business Profile (criado).

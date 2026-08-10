@@ -13,19 +13,15 @@ export default defineConfig({
     server: { entry: "server" },
   },
   nitro: {
-    cloudflare: {
-      // Without this flag, Cloudflare's nodejs_compat only populates process.env
-      // with NODE_ENV — Worker vars/secrets (ADMIN_USERNAME, SUPABASE_SERVICE_ROLE_KEY,
-      // etc.) never reach process.env, so every process.env.X lookup on the server
-      // silently returns undefined even when the var is set in the dashboard.
-      //
-      // The `cloudflare` type here only declares nodeCompat/deployConfig, but
-      // vite-tanstack-config forwards this object to nitro's cloudflare preset
-      // unfiltered — `wrangler` is a real, working nitro option (confirmed in
-      // the built .output/server/wrangler.json). Remove the ts-expect-error if
-      // the package's type ever grows a `wrangler` field.
-      // @ts-expect-error — see comment above
-      wrangler: { compatibility_flags: ["nodejs_compat_populate_process_env"] },
-    },
+    // Overrides the package's cloudflare default. Vercel is the deploy target
+    // (SC-025) — this preset makes the build write .vercel/output (Build Output
+    // API v3) instead of .output/server/wrangler.json, which is what
+    // `vercel deploy --prebuilt` in .github/workflows/deploy.yml expects.
+    //
+    // Nothing here needs Cloudflare's `nodejs_compat_populate_process_env` flag
+    // anymore: on Vercel the server runtime populates process.env natively, so
+    // ADMIN_USERNAME / ADMIN_PASSWORD / ADMIN_SESSION_SECRET / SUPABASE_SERVICE_ROLE_KEY
+    // resolve without any extra compatibility flag.
+    preset: "vercel",
   },
 });

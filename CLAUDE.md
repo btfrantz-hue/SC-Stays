@@ -34,7 +34,7 @@ Reaproveita a mesma tabela `site_sections`, com chaves prefixadas `parceiros_*` 
 
 - **Framework:** TanStack Start (SSR) + TanStack Router v1 (file-based)
 - **UI:** React 19 + Tailwind CSS v4 (`@theme` syntax) + shadcn/ui
-- **Deploy:** Nitro → Cloudflare Workers (edge, sem filesystem). Automático via `.github/workflows/deploy.yml` a cada push em `main` (build gera `.output/server/wrangler.json`, `wrangler deploy` publica). HostGator só hospeda o domínio (DNS) — não roda o app (é hospedagem compartilhada sem Node.js). Ver SC-024 em `docs/MELHORIAS-PENDENTES.md` pros secrets necessários (GitHub Actions vs Cloudflare Worker — são coisas diferentes, não confundir)
+- **Deploy:** Nitro → **Vercel** (preset `vercel` em `vite.config.ts`; o build escreve `.vercel/output`, Build Output API v3). Automático via `.github/workflows/deploy.yml` a cada push em `main`: `npm run build` na Action → `vercel deploy --prebuilt --prod`. O pipeline é único de propósito — a integração Git nativa do Vercel deve ficar **desconectada**, senão sai deploy duplicado. Domínio `scstays.com.br` ainda **não** aponta pra cá (segue no HostGator com HTML estático antigo). Ver SC-025 em `docs/MELHORIAS-PENDENTES.md`. **Variáveis: `VITE_*` são de build (GitHub Secrets, inlinadas pelo Vite); `SUPABASE_SERVICE_ROLE_KEY`/`ADMIN_*` são de runtime (env do projeto no painel do Vercel) — são coisas diferentes, não confundir**
 - **Path alias:** `@/` → `src/`
 - **Rotas:** nunca editar `routeTree.gen.ts` exceto quando o watcher não está ativo
 - **Banco:** Supabase (`zeiauwvkfgibysayvhxu`, configurado — SC-007). Client browser: `src/lib/supabase.ts`. Client server (service role): `src/lib/supabase.server.ts`, só dentro de `createServerFn`
