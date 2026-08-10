@@ -307,6 +307,28 @@ Ou seja: catálogo, painel admin, captura de leads e SEO existem, funcionam, mas
 
 ---
 
+### ✅ SC-026 — Atualização de dependências: os 5 PRs do Dependabot (2026-08-09)
+
+Cinco PRs estavam abertos e parados desde julho. Todos foram testados localmente contra o código atual (não contra a base antiga em que o Dependabot os criou) e **todos passaram**: `npm ci`, `tsc --noEmit`, `npm run build` e render SSR de `/`, `/parceiros`, `/imoveis`, `/imoveis/$slug` e `/admin/login` sem nenhum erro.
+
+| PR | Bump | Resultado |
+|----|------|-----------|
+| #8 | grupo minor/patch — 43 pacotes (Radix, React 19.2.0→19.2.8, Supabase, TanStack, Tailwind) | ✅ limpo |
+| #4 | `lucide-react` 0.575 → **1.24** (major) | ✅ limpo — ver nota do CI vermelho abaixo |
+| #2 | `zod` 3.24 → **4.4** (major) | ✅ limpo — ver nota dos schemas abaixo |
+| #5 | `@vitejs/plugin-react` 5.2 → **6.0** (major) | ✅ limpo |
+| #3 | `eslint-plugin-react-hooks` 5.2 → **7.1** (major) | ✅ limpo |
+
+**O CI vermelho do #4 era falso alarme.** A branch foi criada antes do commit `acb79a4` (que fixou `npm install -g npm@11.13.0` nos workflows), então o CI dela rodava o workflow **antigo** e quebrava no `npm ci` — o mesmo problema de lockfile já documentado no SC-024, nada a ver com o lucide. O `lucide-react` v1 removeu os ícones de marca, e o `Instagram` que `/parceiros` usava foi substituído por um SVG inline no commit `9427a3d` (2026-07-16), que já estava na branch do PR e veio junto.
+
+**`zod` 4 foi validado em runtime, não só no typecheck** — mudança de major em biblioteca de validação não se prova com `tsc`. Todos os schemas do projeto foram executados contra a v4.4.3 (`admin-auth.server.ts`, `leads.server.ts`, `properties.server.ts`, `site-content.server.ts`, `parceiros-content.server.ts`): `z.object` dinâmico via `Object.fromEntries`, `z.string().email()` (aceita válido, rejeita inválido), `.optional().default("")`, `z.enum`, `z.number().int().nonnegative()`, `z.array`, `z.record(z.string(), z.boolean())` — todos passaram. O `z.record` já estava na forma de 2 argumentos que a v4 exige.
+
+**Como foram integrados:** os lockfiles dos 5 PRs conflitam entre si (é o esperado — cada um regenera o arquivo inteiro). Em vez de mergear um a um e brigar com conflito, a branch `chore/deps-integration` parte do #8, traz o fix do Instagram por cherry-pick, sobe os 4 majors direto no `package.json` e **regenera o lockfile do zero**. O `npm` local é o **11.13.0**, exatamente o pin dos workflows — foi conferido antes, justamente pra não reintroduzir o descompasso de versão que já causou os commits `ecbe4ef`/`41b1854`. `npm ci` valida o lockfile gerado.
+
+**Sobra conhecida:** `npm audit` acusa 2 vulnerabilidades high transitivas (`js-yaml` ≤4.3.0 e `brace-expansion`), nenhuma introduzida por esses PRs. São de consumo quadrático de CPU em parsing — o app não faz parse de YAML nem de glob vindo do usuário, então o risco prático é baixo. Ficam pro Dependabot resolver quando houver versão corrigida upstream.
+
+---
+
 ### ✅ GitHub — Boas práticas (já implementado)
 
 | O que | Arquivo | Detalhe |
@@ -344,7 +366,6 @@ _Revisado em 2026-08-09 — vários itens que apareciam como pendentes já estav
 | 🔴 Alta | Cadastrar `VERCEL_TOKEN` no GitHub e desconectar a integração Git do Vercel (SC-025) | Você (5 min no painel) |
 | 🔴 Alta | Apontar `scstays.com.br` pro Vercel — hoje o domínio serve HTML estático de 09/07 e todas as rotas novas dão 404 | Você (adiado por escolha sua nesta rodada) |
 | 🔴 Alta | Storage bucket + fotos reais dos imóveis (SC-008) — hoje todo imóvel mostra as mesmas 3 fotos genéricas | Dev (bloqueado: MCP do Supabase sem permissão) |
-| 🟡 Média | Limpar os 5 PRs abertos do Dependabot (1 com CI vermelho) | Dev |
 | 🟡 Média | Branch protection no GitHub | Você (5 min no painel) |
 | 🟡 Média | Preencher conteúdo real de Resultados/Avaliações/Depoimentos | Você mesmo, em `/admin/pagina-imoveis` |
 | 🟡 Média | Métricas reais de `/parceiros` | Você coleta → Dev implementa (ainda não é admin-editável) |
@@ -352,4 +373,4 @@ _Revisado em 2026-08-09 — vários itens que apareciam como pendentes já estav
 | 🟢 Baixa | Seção "Quem Somos" | Você envia foto/bio → Dev implementa |
 | 🟢 Baixa | Ativar o GA4 no código (conta já criada — falta preencher `VITE_GA_ID` nos secrets) | Dev |
 
-**Já resolvidos, saíram da lista:** secrets de build no GitHub (cadastrados e testados no SC-024/025) · senha forte do admin (trocada) · conta do Google Analytics (criada) · Google Business Profile (criado).
+**Já resolvidos, saíram da lista:** secrets de build no GitHub (cadastrados e testados no SC-024/025) · senha forte do admin (trocada) · conta do Google Analytics (criada) · Google Business Profile (criado) · os 5 PRs do Dependabot (SC-026 — testados e integrados em `chore/deps-integration`).
