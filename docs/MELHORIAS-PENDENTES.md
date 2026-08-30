@@ -85,6 +85,60 @@
 
 ## Parte 2 — Pendências
 
+### 🔴 AUDITORIA 2026-08-30 — o que este doc dizia vs. o que o ambiente diz
+
+Tudo abaixo foi **verificado em execução** (Git, API REST do Supabase com a service role key, `curl` no domínio e no Vercel, dev server local na porta 5173). Não é inferência a partir do texto deste arquivo.
+
+#### 1. 🔴 O trabalho de agosto nunca chegou em `main` — nada dele está publicado
+
+`chore/deps-integration` está **8 commits à frente de `scstays/main`**:
+
+| Commit | Entrega |
+|--------|---------|
+| `560e1e0` | SC-027 — conteúdo de `/parceiros` no admin |
+| `7a65e43` | SC-008 — fotos dos imóveis no Supabase Storage |
+| `f005013` | `routeTree.gen.ts` regenerado |
+| `238999e` `9d59deb` `8c985b2` `befbd8d` | SC-026 — os 5 PRs do Dependabot |
+| `487f397` | SC-025 — migração do deploy para o Vercel |
+
+`.github/workflows/deploy.yml` dispara em `push: branches: [main]`. E `scstays/main` **ainda tem o `vite.config.ts` com o preset Cloudflare** — `main` é anterior ao SC-025. Consequência: SC-008, SC-025, SC-026 e SC-027 estão prontos, testados e **fora do caminho de publicação**. Este doc os marcava como concluídos sem registrar que viviam só numa branch.
+
+#### 2. 🔴 A migration do SC-027 continua não aplicada
+
+```
+parceiros_resultados   -> HTTP 404 (a tabela não existe)
+parceiros_depoimentos  -> HTTP 404 (a tabela não existe)
+site_sections          -> 16 linhas, sem a chave `parceiros_depoimentos`
+```
+
+Efeito medido no dev server local: `/parceiros` responde 200, mas o HTML servido tem **`id="resultados"` → 0 ocorrências**. O bloco Resultados desaparece sem erro visível — `getParceirosContent()` engole a falha em `?? []` (`src/lib/parceiros-content.ts:101`) e `parceiros.tsx:512` tem guarda `resultados.length > 0`. `/admin/pagina-parceiros` abre, mas falha ao salvar.
+
+#### 3. 🟠 `property_images` tem 0 linhas — nenhum imóvel tem foto real
+
+Os 3 imóveis ativos estão todos no fallback genérico. Confirmado no HTML de `/imoveis`: os 3 slugs aparecem, e `property-images` (URL do Storage) → **0 ocorrências**. O upload do SC-008 funciona e nunca foi usado.
+
+#### 4. 🟠 O domínio segue no HostGator
+
+`www.scstays.com.br` → `Server: Apache`, HTML estático. `/imoveis` → **404**. Sem mudança desde 2026-08-09.
+
+#### 5. 🟡 O que está no ar no Vercel é código anterior ao merge
+
+`graphic-to-site-glow.vercel.app` (projeto `prj_Sx8L5VmlgEJzm9mY95G3vZadzCEK`) responde `/`, `/parceiros`, `/imoveis`, `/imoveis/$slug` e `/admin/login` → **200**; `/admin` → **303**. Funciona — mas sem SC-008 e sem SC-027. Como `main` não tem o SC-025, esse deploy **não saiu do `deploy.yml`**: veio de um deploy manual ou da integração Git nativa do Vercel, que o próprio SC-025 pede para desconectar. Vale checar antes de mergear.
+
+#### 6. 🟡 Quatro seções estão desligadas no admin
+
+`depoimentos` (de `/imoveis`), `parceiros_problema`, `parceiros_solucao` e `parceiros_valor_dono` com `visible = false`. Pode ter sido intencional — vale reconferir.
+
+#### 7. 🟡 Dois remotes divergentes
+
+`origin` = `crobertofrantz-netizen/graphic-to-site-glow` · `scstays` = `btfrantz-hue/SC-Stays`. As duas `main` divergiram (origin tem 1 commit que scstays não tem; scstays tem 5 que origin não tem). Os secrets do SC-025 apontam para `btfrantz-hue/SC-Stays`, então **scstays é o canônico** — mas `origin` é o remote padrão do push, o que é uma armadilha real na hora de mergear. A branch `homolog` está 27 commits atrás e não serve de staging.
+
+#### ✅ O que a auditoria confirmou intacto
+
+`properties` 3 ativos · `site_sections` 16 · `resultado_cards` 4 · `app_ratings` 3 · `depoimentos` 3 · `proposal_leads` **0** (nenhum lead real ainda) · `whatsapp_clicks` 2 (testes). `.env` local com as 7 variáveis. Node 24.16 / npm 11.13.0 (bate com o pin dos workflows). Dev server local sobe limpo e as 12 rotas respondem o esperado (200 nas públicas, 303 nas de admin sem sessão).
+
+---
+
 ### ⏳ Conteúdo para substituir os mocks
 
 **`[PRECISA DE VOCÊ]`** — os itens de `/imoveis` (Resultados, Avaliações, Depoimentos) agora você mesmo edita em `/admin/pagina-imoveis`, sem precisar pedir pro dev. Falta só:
@@ -203,6 +257,8 @@ CRUD via server functions (`src/lib/properties.server.ts`, service role, ignora 
 **⚠️ Não verificado em execução: a tela do admin.** `/admin/imoveis/$id` exige sessão, e nesta sessão de trabalho não havia browser automatizado disponível. O que garante a tela: `tsc --noEmit` limpo, `eslint` sem erros nos arquivos novos, `npm run build` passando, e o fato de o loader/`router.invalidate()`/`AlertDialog` seguirem exatamente o padrão já em produção nas outras telas admin. **Vale um clique manual** em `/admin/imoveis/<imóvel>` na primeira vez que subir fotos: enviar 2 fotos, trocar a capa, reordenar e remover uma.
 
 **`[PRECISA DE VOCÊ]`** — subir as fotos reais de cada imóvel em `/admin/imoveis/<imóvel>`. Enquanto um imóvel não tiver nenhuma, ele continua no fallback genérico. Quando todos tiverem, `src/lib/property-image-fallback.ts` e os 3 assets podem ser removidos.
+
+**🟠 Status em 2026-08-30: `property_images` tem 0 linhas.** Nenhuma foto foi subida ainda — os 3 imóveis do catálogo estão todos no fallback genérico. Confirmado no HTML de `/imoveis`: `property-images` (URL do Storage) → 0 ocorrências. A funcionalidade está pronta e nunca foi exercitada com conteúdo real; o clique manual de validação sugerido acima continua valendo.
 
 ### ✅ SC-019 — Captura de leads + indicadores de performance (2026-07-15)
 
@@ -362,6 +418,8 @@ O SC-023 tinha deixado `/parceiros` com só a **visibilidade** dos blocos editá
 **⚠️ Ordem obrigatória: aplicar a migration ANTES de publicar.** Sem as tabelas, `getParceirosContent()` devolve listas vazias — a seção Resultados some da página (há guarda de `length > 0`, então não quebra, mas some).
 
 > **`[PRECISA DE VOCÊ]` — aplicar o SQL.** Não dá para criar tabela pelo Claude Code neste projeto: o conector MCP do Supabase está autorizado numa conta que só enxerga o projeto `studio3dapplication`, não o `zeiauwvkfgibysayvhxu`, e a API REST com a service role key faz DML mas não DDL (nenhuma RPC de SQL exposta — verificado). Colar o arquivo no SQL Editor do Supabase resolve. Reautorizar o conector na conta certa também, e passa a valer pras próximas.
+>
+> **🔴 Status em 2026-08-30: confirmado NÃO aplicado.** `parceiros_resultados` e `parceiros_depoimentos` respondem **HTTP 404** na API REST, e `site_sections` segue com 16 chaves (sem `parceiros_depoimentos`). Efeito verificado no dev server: `/parceiros` renderiza sem o bloco Resultados (`id="resultados"` → 0 ocorrências no HTML). Ver a auditoria no topo da Parte 2.
 
 **Não verificado em execução:** `/parceiros` e `/admin/pagina-parceiros` com dados reais, porque as tabelas ainda não existem. Cobertos por `tsc --noEmit` limpo, `eslint` sem erros e `npm run build` passando. O roteiro de teste está no plano da sessão.
 
@@ -397,19 +455,43 @@ VERCEL_TOKEN             ⏳ PENDENTE — sem ele o deploy não roda
 
 ## Resumo executivo das pendências
 
-_Revisado em 2026-08-09 — vários itens que apareciam como pendentes já estavam feitos._
+_Reescrito em 2026-08-30, na ordem de dependência real — cada bloco destrava o seguinte. A ordem importa: adiantar o Bloco 2 sem o Bloco 1 significa cadastrar conteúdo que ninguém vê._
 
-| Prioridade | Item | Quem |
-|-----------|------|------|
-| 🔴 Alta | Cadastrar `VERCEL_TOKEN` no GitHub e desconectar a integração Git do Vercel (SC-025) | Você (5 min no painel) |
-| 🔴 Alta | Apontar `scstays.com.br` pro Vercel — hoje o domínio serve HTML estático de 09/07 e todas as rotas novas dão 404 | Você (adiado por escolha sua nesta rodada) |
-| 🔴 Alta | Subir as fotos reais de cada imóvel em `/admin/imoveis` — o upload já existe (SC-008), falta o conteúdo | Você |
-| 🟡 Média | Branch protection no GitHub | Você (5 min no painel) |
-| 🔴 Alta | Aplicar `supabase/migrations/sc027_parceiros_content.sql` no SQL Editor — **antes** de publicar | Você |
-| 🟡 Média | Preencher conteúdo real de Resultados/Avaliações/Depoimentos | Você mesmo, em `/admin/pagina-imoveis` |
-| 🟡 Média | Preencher métricas e depoimentos de proprietários | Você mesmo, em `/admin/pagina-parceiros` (SC-027) |
-| 🟢 Baixa | OG Image 1200×630 de verdade — o `public/og-image.jpg` atual é cópia byte a byte do `hero-living.jpg` | Designer |
-| 🟢 Baixa | Seção "Quem Somos" | Você envia foto/bio → Dev implementa |
-| 🟢 Baixa | Ativar o GA4 no código (conta já criada — falta preencher `VITE_GA_ID` nos secrets) | Dev |
+### Bloco 1 — destravar o que já está pronto mas invisível
 
-**Já resolvidos, saíram da lista:** secrets de build no GitHub (cadastrados e testados no SC-024/025) · senha forte do admin (trocada) · conta do Google Analytics (criada) · Google Business Profile (criado) · os 5 PRs do Dependabot (SC-026 — testados e integrados em `chore/deps-integration`).
+| # | Item | Quem |
+|---|------|------|
+| 1 | Aplicar `supabase/migrations/sc027_parceiros_content.sql` no SQL Editor (`zeiauwvkfgibysayvhxu`) | **Você** — 2 min |
+| 2 | Mergear `chore/deps-integration` → `main`. Sem isso SC-008/025/026/027 não chegam ao pipeline | Dev |
+| 3 | Cadastrar `VERCEL_TOKEN` em `btfrantz-hue/SC-Stays` → Settings → Secrets → Actions | **Você** |
+| 4 | Desconectar a integração Git nativa no Vercel — pipeline único (mesma armadilha do SC-024) | **Você** |
+
+### Bloco 2 — conteúdo (só depende de você; todas as telas já existem)
+
+| # | Item | Onde |
+|---|------|------|
+| 5 | Subir as fotos reais dos 3 imóveis — `property_images` está com 0 linhas | `/admin/imoveis/<imóvel>` |
+| 6 | Métricas e depoimentos de proprietários | `/admin/pagina-parceiros` (depende do item 1) |
+| 7 | Resultados / Avaliações / Depoimentos de hóspedes | `/admin/pagina-imoveis` |
+| 8 | Revisar as 4 seções desligadas (`depoimentos`, `parceiros_problema`, `parceiros_solucao`, `parceiros_valor_dono`) | ambos os admins |
+
+### Bloco 3 — ir ao ar de verdade
+
+| # | Item | Quem |
+|---|------|------|
+| 9 | Apontar `scstays.com.br` pro Vercel (Settings → Domains + DNS no HostGator) | **Você** |
+
+Enquanto o item 9 não acontece, catálogo, admin, captura de leads e SEO existem e funcionam, mas ninguém que digita o domínio real os vê. **Depois dele, o que estava planejado acaba.**
+
+### Bloco 4 — encerramento (não bloqueia o lançamento)
+
+| # | Item | Quem |
+|---|------|------|
+| 10 | Branch protection em `main` (exigir o check `TypeScript`) | **Você** |
+| 11 | `VITE_GA_ID` nos secrets → ativa o GA4 (conta já criada) | **Você** |
+| 12 | OG Image 1200×630 de verdade — o `public/og-image.jpg` atual é cópia byte a byte do `hero-living.jpg` | Designer |
+| 13 | Seção "Quem Somos" em `/parceiros` | Você envia foto/bio → Dev implementa |
+| 14 | Limpeza: remover os secrets do Cloudflare do GitHub e apagar o Worker antigo | **Você** |
+| 15 | Decidir o remote canônico (`scstays` vs. `origin`) e alinhar/arquivar o outro; a branch `homolog` está 27 commits atrás | Dev + você |
+
+**Já resolvidos, saíram da lista:** secrets de build no GitHub (cadastrados e testados no SC-024/025) · senha forte do admin (trocada) · conta do Google Analytics (criada) · Google Business Profile (criado) · os 5 PRs do Dependabot (SC-026 — testados e integrados em `chore/deps-integration`, **ainda não em `main`**).
