@@ -184,6 +184,15 @@ export function PropertyForm({
         })}
       </div>
 
+      {/* Uploads need a property id to key the storage path, so photos are only
+          managed on the edit screen (see admin.imoveis.$id.tsx). */}
+      {!property && (
+        <p className="text-xs text-muted-foreground border border-dashed border-border rounded-md p-3">
+          As fotos são adicionadas depois de salvar: o imóvel aparece na lista e, ao abri-lo para
+          edição, a seção "Fotos do imóvel" fica disponível.
+        </p>
+      )}
+
       <Button type="submit" disabled={submitting}>
         {submitting ? "Salvando…" : "Salvar imóvel"}
       </Button>

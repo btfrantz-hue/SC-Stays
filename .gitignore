@@ -16,9 +16,14 @@ dist-ssr
 .nitro
 *.local
 
-# Wrangler / Cloudflare
+# Deploy — saída de build e link do projeto (nunca commitar)
+.vercel
+# Cloudflare: alvo antigo (SC-024), mantido ignorado por causa de sobras locais
 .wrangler/
 .dev.vars
+
+# Supabase CLI — cache local do binario, regenerado a cada uso
+supabase/.temp/
 
 # Environment variables — NUNCA commitar chaves aqui
 .env

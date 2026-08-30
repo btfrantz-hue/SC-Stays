@@ -2,7 +2,12 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createSupabaseServerClient } from "./supabase.server";
 import { requireAdminMiddleware } from "./admin-auth.server";
-import { PARCEIROS_SECTION_KEYS, type ParceirosSectionKey } from "./parceiros-content";
+import {
+  PARCEIROS_SECTION_KEYS,
+  mapSectionRows,
+  type ParceirosPageContent,
+  type ParceirosSectionKey,
+} from "./parceiros-content";
 
 const DB_KEY_PREFIX = "parceiros_";
 
@@ -13,39 +18,104 @@ const sectionsSchema = z.object(
   >,
 );
 
-function defaults(): Record<ParceirosSectionKey, boolean> {
-  return Object.fromEntries(PARCEIROS_SECTION_KEYS.map((k) => [k, true])) as Record<ParceirosSectionKey, boolean>;
-}
+const resultadoSchema = z.object({
+  id: z.string(),
+  icon_key: z.string().min(1),
+  // Unlike the /imoveis cards, `valor` may be empty — see parceiros-content.ts.
+  valor: z.string(),
+  label: z.string().min(1),
+});
 
-export const getAdminParceirosSections = createServerFn({ method: "GET" })
+const depoimentoSchema = z.object({
+  id: z.string().optional(),
+  nome: z.string().min(1),
+  cidade: z.string().min(1),
+  texto: z.string().min(1),
+});
+
+const saveSchema = z.object({
+  sections: sectionsSchema,
+  resultados: z.array(resultadoSchema),
+  depoimentos: z.array(depoimentoSchema),
+});
+
+export const getAdminParceirosContent = createServerFn({ method: "GET" })
   .middleware([requireAdminMiddleware])
-  .handler(async (): Promise<Record<ParceirosSectionKey, boolean>> => {
+  .handler(async (): Promise<ParceirosPageContent> => {
     const supabase = createSupabaseServerClient();
-    const { data, error } = await supabase
-      .from("site_sections")
-      .select("key, visible")
-      .like("key", `${DB_KEY_PREFIX}%`);
-    if (error) throw new Error(error.message);
+    const [sectionsRes, resultadosRes, depoimentosRes] = await Promise.all([
+      supabase.from("site_sections").select("key, visible").like("key", `${DB_KEY_PREFIX}%`),
+      supabase
+        .from("parceiros_resultados")
+        .select("id, icon_key, valor, label")
+        .order("sort_order"),
+      supabase.from("parceiros_depoimentos").select("id, nome, cidade, texto").order("sort_order"),
+    ]);
 
-    const result = defaults();
-    for (const row of data ?? []) {
-      const key = row.key.slice(DB_KEY_PREFIX.length) as ParceirosSectionKey;
-      if (key in result) result[key] = row.visible;
-    }
-    return result;
+    if (sectionsRes.error) throw new Error(sectionsRes.error.message);
+    if (resultadosRes.error) throw new Error(resultadosRes.error.message);
+    if (depoimentosRes.error) throw new Error(depoimentosRes.error.message);
+
+    return {
+      sections: mapSectionRows(sectionsRes.data),
+      resultados: resultadosRes.data ?? [],
+      depoimentos: depoimentosRes.data ?? [],
+    };
   });
 
-export const saveParceirosSections = createServerFn({ method: "POST" })
+export const saveParceirosContent = createServerFn({ method: "POST" })
   .middleware([requireAdminMiddleware])
-  .validator((data: unknown) => sectionsSchema.parse(data))
+  .validator((data: unknown) => saveSchema.parse(data))
   .handler(async ({ data }) => {
     const supabase = createSupabaseServerClient();
+
     for (const key of PARCEIROS_SECTION_KEYS) {
       const { error } = await supabase
         .from("site_sections")
-        .update({ visible: data[key] })
+        .update({ visible: data.sections[key] })
         .eq("key", `${DB_KEY_PREFIX}${key}`);
       if (error) throw new Error(error.message);
     }
+
+    for (const card of data.resultados) {
+      const { error } = await supabase
+        .from("parceiros_resultados")
+        .update({ icon_key: card.icon_key, valor: card.valor, label: card.label })
+        .eq("id", card.id);
+      if (error) throw new Error(error.message);
+    }
+
+    // Rows the admin removed are simply absent from the submitted array — there
+    // is no delete flag. Same approach as saveSiteConfig; getting this wrong is
+    // what made "Remover" silently no-op in SC-021.
+    const submittedIds = data.depoimentos.filter((d) => d.id).map((d) => d.id!);
+    const { data: existingRows, error: existingError } = await supabase
+      .from("parceiros_depoimentos")
+      .select("id");
+    if (existingError) throw new Error(existingError.message);
+
+    const toDelete = (existingRows ?? [])
+      .map((r) => r.id)
+      .filter((id) => !submittedIds.includes(id));
+    if (toDelete.length > 0) {
+      const { error } = await supabase.from("parceiros_depoimentos").delete().in("id", toDelete);
+      if (error) throw new Error(error.message);
+    }
+
+    for (let i = 0; i < data.depoimentos.length; i++) {
+      const d = data.depoimentos[i];
+      const payload = { nome: d.nome, cidade: d.cidade, texto: d.texto, sort_order: i };
+      if (d.id) {
+        const { error } = await supabase
+          .from("parceiros_depoimentos")
+          .update(payload)
+          .eq("id", d.id);
+        if (error) throw new Error(error.message);
+      } else {
+        const { error } = await supabase.from("parceiros_depoimentos").insert(payload);
+        if (error) throw new Error(error.message);
+      }
+    }
+
     return { ok: true };
   });

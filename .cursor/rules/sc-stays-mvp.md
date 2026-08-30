@@ -9,7 +9,7 @@ Este MVP é uma **vitrine de imóveis + contato via WhatsApp**. Não há reserva
 - **Framework:** TanStack Start (SSR) + TanStack Router (file-based)
 - **UI:** React 19 + Tailwind CSS v4 + shadcn/ui (Radix)
 - **Banco:** Supabase (PostgreSQL + Storage)
-- **Build/Deploy:** Vite + Nitro (target: Cloudflare Workers)
+- **Build/Deploy:** Vite + Nitro (preset: Vercel)
 - **Forms:** react-hook-form + zod
 
 ## Convenções de roteamento

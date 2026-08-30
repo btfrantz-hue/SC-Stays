@@ -24,9 +24,29 @@ Não existem mais feature flags estáticas para as seções de `/imoveis` — tu
 
 Leitura pública: `src/lib/site-content.ts` (`getImoveisPageContent`, client anon, RLS `select using (true)`). Escrita: `src/lib/site-content.server.ts` (`getAdminSiteConfig`/`saveSiteConfig`, `service_role`, protegidos por `requireAdminMiddleware`).
 
-## Visibilidade dos blocos da página /parceiros
+## Conteúdo da página /parceiros (admin-editável)
 
-Reaproveita a mesma tabela `site_sections`, com chaves prefixadas `parceiros_*` (12 blocos, todo o texto/conteúdo continua hardcoded em `parceiros.tsx` — só a visibilidade é admin-editável). **O hero é sempre visível, não tem chave/switch.** Editar em `/admin/pagina-parceiros`. Leitura pública: `src/lib/parceiros-content.ts` (`getParceirosSections`). Escrita: `src/lib/parceiros-content.server.ts`. Lista de chaves/labels: `PARCEIROS_SECTION_KEYS`/`PARCEIROS_SECTION_LABELS` em `parceiros-content.ts` — **novo bloco na página = adicionar a chave nesses dois lugares + inserir a linha em `site_sections` via migration + envolver o JSX com `{sections.<key> && (...)}`.**
+Visibilidade dos 13 blocos: mesma tabela `site_sections`, com chaves prefixadas `parceiros_*`. **O hero é sempre visível, não tem chave/switch.**
+
+| Tabela | Seção | Add/remove? |
+|--------|-------|-------------|
+| `site_sections` (chaves `parceiros_*`) | visibilidade dos 13 blocos | — |
+| `parceiros_resultados` | 4 cards do bloco Resultados | não (linhas fixas, só ícone/valor/legenda editáveis) |
+| `parceiros_depoimentos` | depoimentos de proprietários | sim (admin adiciona/remove) |
+
+`valor` em `parceiros_resultados` é **opcional**: vazio renderiza só ícone + legenda; preenchido mostra o número acima. Os demais blocos continuam com texto hardcoded em `parceiros.tsx` — só a visibilidade é editável.
+
+Editar em `/admin/pagina-parceiros`. Leitura pública: `src/lib/parceiros-content.ts` (`getParceirosContent`, devolve `{ sections, resultados, depoimentos }`). Escrita: `src/lib/parceiros-content.server.ts` (`getAdminParceirosContent`/`saveParceirosContent`, protegidos por `requireAdminMiddleware`).
+
+**Gotcha:** o `Header` em `__root.tsx` lê o `loaderData` de `/parceiros` via `useMatches()` para filtrar o menu — mudar o shape do retorno do loader quebra o header se não for ajustado junto.
+
+**Novo bloco na página** = adicionar a chave em `PARCEIROS_SECTION_KEYS`/`PARCEIROS_SECTION_LABELS` + inserir a linha em `site_sections` via migration + envolver o JSX com `{sections.<key> && (...)}`.
+
+## Migrations
+
+`supabase/migrations/*.sql`, criado no SC-027. **As migrations anteriores (sc007, sc010, sc021, sc023) não estão versionadas** — foram aplicadas direto no banco remoto e só existem lá. Escrever toda migration nova nessa pasta, idempotente.
+
+Aplicar exige o SQL Editor do Supabase ou o MCP autorizado no projeto certo: a API REST com a service role key faz DML, mas **não DDL**.
 
 ---
 
@@ -34,7 +54,7 @@ Reaproveita a mesma tabela `site_sections`, com chaves prefixadas `parceiros_*` 
 
 - **Framework:** TanStack Start (SSR) + TanStack Router v1 (file-based)
 - **UI:** React 19 + Tailwind CSS v4 (`@theme` syntax) + shadcn/ui
-- **Deploy:** Nitro → Cloudflare Workers (edge, sem filesystem). Automático via `.github/workflows/deploy.yml` a cada push em `main` (build gera `.output/server/wrangler.json`, `wrangler deploy` publica). HostGator só hospeda o domínio (DNS) — não roda o app (é hospedagem compartilhada sem Node.js). Ver SC-024 em `docs/MELHORIAS-PENDENTES.md` pros secrets necessários (GitHub Actions vs Cloudflare Worker — são coisas diferentes, não confundir)
+- **Deploy:** Nitro → **Vercel** (preset `vercel` em `vite.config.ts`; o build escreve `.vercel/output`, Build Output API v3). Automático via `.github/workflows/deploy.yml` a cada push em `main`: `npm run build` na Action → `vercel deploy --prebuilt --prod`. O pipeline é único de propósito — a integração Git nativa do Vercel deve ficar **desconectada**, senão sai deploy duplicado. Domínio `scstays.com.br` ainda **não** aponta pra cá (segue no HostGator com HTML estático antigo). Ver SC-025 em `docs/MELHORIAS-PENDENTES.md`. **Variáveis: `VITE_*` são de build (GitHub Secrets, inlinadas pelo Vite); `SUPABASE_SERVICE_ROLE_KEY`/`ADMIN_*` são de runtime (env do projeto no painel do Vercel) — são coisas diferentes, não confundir**
 - **Path alias:** `@/` → `src/`
 - **Rotas:** nunca editar `routeTree.gen.ts` exceto quando o watcher não está ativo
 - **Banco:** Supabase (`zeiauwvkfgibysayvhxu`, configurado — SC-007). Client browser: `src/lib/supabase.ts`. Client server (service role): `src/lib/supabase.server.ts`, só dentro de `createServerFn`
@@ -60,11 +80,18 @@ Reaproveita a mesma tabela `site_sections`, com chaves prefixadas `parceiros_*` 
 | `/admin/imoveis/novo` | `routes/admin.imoveis.novo.tsx` | Criar imóvel |
 | `/admin/imoveis/$id` | `routes/admin.imoveis.$id.tsx` | Editar imóvel + visibilidade por campo |
 | `/admin/pagina-imoveis` | `routes/admin.pagina-imoveis.tsx` | Visibilidade e conteúdo de Catálogo/Resultados/Avaliações/Depoimentos |
-| `/admin/pagina-parceiros` | `routes/admin.pagina-parceiros.tsx` | Visibilidade dos 12 blocos de `/parceiros` (hero sempre visível) |
+| `/admin/pagina-parceiros` | `routes/admin.pagina-parceiros.tsx` | Conteúdo de Resultados/Depoimentos + visibilidade dos 13 blocos de `/parceiros` (hero sempre visível) |
 | `/admin/leads` | `routes/admin.leads.tsx` | Log + indicadores de propostas (`proposal_leads`) e cliques de WhatsApp (`whatsapp_clicks`), export CSV |
 
 ## Visibilidade de campos por imóvel
 Coluna `properties.visible_fields` (jsonb) guarda overrides por campo (`{"amenities": false}` = oculto; chave ausente/`true` = visível). Campos controláveis definidos em `src/lib/property-fields.ts` (`CONTROLLABLE_FIELDS`) — só inclui campos que o catálogo/detalhe realmente renderizam. O admin (`src/components/admin/property-form.tsx`) mostra um checkbox "Visível no site" ao lado de cada campo controlável. `/imoveis` e `/imoveis/$slug` usam `isFieldVisible()` para decidir o que renderizar.
+
+## Fotos dos imóveis (SC-008)
+Bucket público `property-images` no Supabase Storage; metadados na tabela `property_images` (`storage_path`, `is_cover`, `sort_order`). Constantes e helpers compartilhados em `src/lib/property-images.ts` (sem imports server-only — é usado pelo catálogo público **e** pelo admin).
+
+**Upload não passa bytes pela server function:** o admin chama `createPropertyImageUploadUrl` (protegida), o browser faz `uploadToSignedUrl` direto no Storage e depois registra o caminho com `addPropertyImage`. O path é sempre gerado no servidor (`<property_id>/<uuid>.<ext>`) — nunca usar o nome de arquivo enviado pelo usuário. UI em `src/components/admin/property-images-manager.tsx`, renderizada **fora** do `<form>` em `admin.imoveis.$id.tsx` porque cada ação salva na hora.
+
+Ao mexer em exclusão de imóvel/foto, lembrar que **Storage não tem cascade**: apagar a linha não apaga o arquivo. `deleteAdminProperty` e `deletePropertyImage` removem os objetos explicitamente.
 
 ## Captura de leads
 - `proposal_leads` — envios do formulário "Receba uma proposta" (`/parceiros`), via `submitProposalLead` (`src/lib/leads.server.ts`)
@@ -74,6 +101,6 @@ Coluna `properties.visible_fields` (jsonb) guarda overrides por campo (`{"amenit
 
 ## Dados mock
 - Imóveis: migrados para Supabase (`src/lib/mock-properties.ts` removido)
-- Imagens dos imóveis: `src/lib/property-image-fallback.ts` — fallback local temporário até o Storage bucket existir (SC-008)
+- Imagens dos imóveis: vêm do Supabase Storage (bucket `property-images`, SC-008). `src/lib/property-image-fallback.ts` só é usado por imóvel que ainda **não** tem foto — quando todos tiverem, o arquivo e os 3 assets podem sair
 - Resultados/Avaliações/Depoimentos de `/imoveis`: migrados para Supabase, admin-editáveis (ver seção acima)
-- `/parceiros`: todo o texto continua hardcoded no componente; só a visibilidade dos blocos é admin-editável (ver seção acima)
+- `/parceiros`: Resultados e Depoimentos de proprietários migrados para o Supabase, admin-editáveis (SC-027). O texto dos demais blocos continua hardcoded no componente; deles só a visibilidade é editável (ver seção acima)

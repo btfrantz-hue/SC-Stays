@@ -3,7 +3,7 @@ import { useState } from "react";
 import {
   Home, Calendar, Sparkles, TrendingUp, FileText,
   Headphones, DollarSign, BarChart3, Search, ClipboardEdit,
-  Settings, Award, Instagram, Globe, Phone, ShieldCheck, Clock, Heart, CheckCircle2, Mail,
+  Settings, Award, Globe, Phone, ShieldCheck, Clock, Heart, CheckCircle2, Mail, Quote,
 } from "lucide-react";
 import {
   Accordion,
@@ -17,11 +17,20 @@ import bedroom from "@/assets/bedroom.jpg";
 import coast from "@/assets/coast.jpg";
 import { submitProposalLead } from "@/lib/leads.server";
 import { trackWhatsappClick } from "@/lib/track-whatsapp-click";
-import { getParceirosSections } from "@/lib/parceiros-content";
+import { getParceirosContent } from "@/lib/parceiros-content";
+
+const PARCEIROS_RESULTADO_ICONS: Record<string, React.ReactNode> = {
+  trending_up: <TrendingUp className="w-6 h-6" />,
+  dollar: <DollarSign className="w-6 h-6" />,
+  heart: <Heart className="w-6 h-6" />,
+  clock: <Clock className="w-6 h-6" />,
+  award: <Award className="w-6 h-6" />,
+  home: <Home className="w-6 h-6" />,
+};
 
 export const Route = createFileRoute("/parceiros")({
   component: Landing,
-  loader: () => getParceirosSections(),
+  loader: () => getParceirosContent(),
   head: () => ({
     meta: [
       { title: "SC Stays Collection — Gestão de Airbnb e Temporada em Santa Catarina" },
@@ -32,6 +41,25 @@ export const Route = createFileRoute("/parceiros")({
 
 const WA_URL = "https://wa.me/5548991822477";
 const WA_PROPOSTA = `${WA_URL}?text=${encodeURIComponent("Olá! Tenho interesse em saber mais sobre a gestão do meu imóvel com a SC Stays.")}`;
+
+function InstagramIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect width="20" height="20" x="2" y="2" rx="5" ry="5" />
+      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5" />
+    </svg>
+  );
+}
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
@@ -197,7 +225,7 @@ function LeadForm() {
 }
 
 function Landing() {
-  const sections = Route.useLoaderData();
+  const { sections, resultados, depoimentos } = Route.useLoaderData();
 
   return (
     <div className="min-h-screen bg-cream text-ink">
@@ -481,7 +509,7 @@ function Landing() {
       )}
 
       {/* RESULTADOS */}
-      {sections.resultados && (
+      {sections.resultados && resultados.length > 0 && (
         <section className="py-16 lg:py-20 min-h-screen flex items-center">
           <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full">
             <div className="slide-frame p-8 lg:p-12 text-center">
@@ -491,17 +519,16 @@ function Landing() {
               </h2>
 
               <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-                {[
-                  { icon: <TrendingUp className="w-6 h-6" />, t: "Mais ocupação" },
-                  { icon: <DollarSign className="w-6 h-6" />, t: "Mais rentabilidade" },
-                  { icon: <Heart className="w-6 h-6" />, t: "Melhores avaliações" },
-                  { icon: <Clock className="w-6 h-6" />, t: "Mais tempo para você" },
-                ].map((r) => (
-                  <div key={r.t} className="flex flex-col items-center">
+                {resultados.map((r) => (
+                  <div key={r.id} className="flex flex-col items-center">
                     <div className="w-14 h-14 rounded-full border border-gold/60 flex items-center justify-center text-gold">
-                      {r.icon}
+                      {PARCEIROS_RESULTADO_ICONS[r.icon_key] ?? PARCEIROS_RESULTADO_ICONS.award}
                     </div>
-                    <div className="mt-4 text-xs tracking-[0.24em] uppercase text-navy">{r.t}</div>
+                    {/* Empty `valor` keeps the original qualitative layout */}
+                    {r.valor && (
+                      <div className="mt-4 font-display text-3xl text-navy leading-none">{r.valor}</div>
+                    )}
+                    <div className="mt-4 text-xs tracking-[0.24em] uppercase text-navy">{r.label}</div>
                   </div>
                 ))}
               </div>
@@ -511,6 +538,34 @@ function Landing() {
                 e um excelente investimento.&rdquo;
               </p>
               <div className="slide-frame-band" />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* DEPOIMENTOS DE PROPRIETÁRIOS */}
+      {sections.depoimentos && depoimentos.length > 0 && (
+        <section id="depoimentos" className="py-16 lg:py-20 bg-cream-deep/40 scroll-mt-28">
+          <div className="max-w-7xl mx-auto px-6 lg:px-12 w-full">
+            <SectionLabel>Depoimentos</SectionLabel>
+            <h2 className="font-display text-3xl lg:text-4xl text-navy leading-tight max-w-2xl">
+              Quem já confia a gestão para a gente.
+            </h2>
+
+            <div className="mt-10 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {depoimentos.map((d) => (
+                <div key={d.id} className="slide-frame p-6 flex flex-col">
+                  <Quote className="w-5 h-5 text-gold/60 mb-4 shrink-0" />
+                  <p className="text-sm text-muted-ink leading-relaxed flex-1">
+                    &ldquo;{d.texto}&rdquo;
+                  </p>
+                  <div className="mt-5 pt-4 border-t border-border/50">
+                    <div className="text-sm font-medium text-navy">{d.nome}</div>
+                    <div className="text-xs text-muted-ink/60 mt-0.5">{d.cidade}</div>
+                  </div>
+                  <div className="slide-frame-band" />
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -620,7 +675,7 @@ function Landing() {
                 </a>
                 <a href="https://instagram.com/scstayscollection" className="flex items-center gap-4 group">
                   <div className="w-12 h-12 rounded-full border border-gold/50 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-navy transition">
-                    <Instagram className="w-5 h-5" />
+                    <InstagramIcon className="w-5 h-5" />
                   </div>
                   <div>
                     <div className="text-xs tracking-[0.24em] uppercase text-gold">Instagram</div>

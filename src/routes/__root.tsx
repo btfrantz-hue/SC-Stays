@@ -126,6 +126,7 @@ const PARCEIROS_NAV: { href: string; label: string; key: ParceirosSectionKey }[]
   { href: "#solucao", label: "A Solução", key: "solucao" },
   { href: "#servicos", label: "O Que Fazemos", key: "servicos" },
   { href: "#processo", label: "Como Funciona", key: "processo" },
+  { href: "#depoimentos", label: "Depoimentos", key: "depoimentos" },
   { href: "#faq", label: "FAQ", key: "faq" },
   { href: "#contato", label: "Contato", key: "contato" },
 ];
@@ -134,9 +135,13 @@ function Header() {
   const [open, setOpen] = useState(false);
   const { pathname } = useLocation();
   const matches = useMatches();
-  const parceirosSections = matches.find((m) => m.routeId === "/parceiros")?.loaderData as
-    | Record<ParceirosSectionKey, boolean>
-    | undefined;
+  // The /parceiros loader returns the whole page content since SC-027; the
+  // header only needs the visibility map out of it.
+  const parceirosSections = (
+    matches.find((m) => m.routeId === "/parceiros")?.loaderData as
+      | { sections: Record<ParceirosSectionKey, boolean> }
+      | undefined
+  )?.sections;
 
   // No header on home (has its own logo) or admin routes (own layout)
   if (pathname === "/" || pathname.startsWith("/admin")) return null;

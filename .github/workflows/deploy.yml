@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Build and deploy to Cloudflare Workers
+    name: Build and deploy to Vercel
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +21,12 @@ jobs:
 
       - run: npm ci
 
+      # The nitro `vercel` preset writes .vercel/output (Build Output API v3),
+      # which is exactly what `vercel deploy --prebuilt` uploads — so the build
+      # runs here, not on Vercel's builders. VITE_* are build-time only: Vite
+      # inlines them into the bundle, so they come from GitHub Secrets.
+      # Runtime vars (SUPABASE_SERVICE_ROLE_KEY, ADMIN_*) are NOT set here —
+      # they live in the Vercel project's environment variables.
       - name: Build
         run: npm run build
         env:
@@ -28,10 +34,12 @@ jobs:
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_GA_ID: ${{ secrets.VITE_GA_ID }}
 
-      - name: Deploy to Cloudflare Workers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4"
-          command: deploy
+      # ORG/PROJECT ids are plain env, not secrets: they are project
+      # identifiers (useless without the token) and .vercel/ is gitignored,
+      # so the CLI cannot read them from the checkout.
+      - name: Deploy to Vercel
+        run: npx vercel@latest deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_Ws2LQbQplAcIxtcLUC1v4Ewj
+          VERCEL_PROJECT_ID: prj_Sx8L5VmlgEJzm9mY95G3vZadzCEK

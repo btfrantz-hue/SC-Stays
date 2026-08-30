@@ -9,27 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as ParceirosRouteImport } from './routes/parceiros'
-import { Route as ImoveisRouteImport } from './routes/imoveis'
-import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ImoveisSlugRouteImport } from './routes/imoveis.$slug'
-import { Route as AdminPaginaParceirosRouteImport } from './routes/admin.pagina-parceiros'
-import { Route as AdminPaginaImoveisRouteImport } from './routes/admin.pagina-imoveis'
-import { Route as AdminLoginRouteImport } from './routes/admin.login'
-import { Route as AdminLeadsRouteImport } from './routes/admin.leads'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as ImoveisRouteImport } from './routes/imoveis'
+import { Route as ParceirosRouteImport } from './routes/parceiros'
 import { Route as AdminImoveisRouteImport } from './routes/admin.imoveis'
-import { Route as AdminImoveisNovoRouteImport } from './routes/admin.imoveis.novo'
+import { Route as AdminLeadsRouteImport } from './routes/admin.leads'
+import { Route as AdminLoginRouteImport } from './routes/admin.login'
+import { Route as AdminPaginaImoveisRouteImport } from './routes/admin.pagina-imoveis'
+import { Route as AdminPaginaParceirosRouteImport } from './routes/admin.pagina-parceiros'
+import { Route as ImoveisSlugRouteImport } from './routes/imoveis.$slug'
 import { Route as AdminImoveisIdRouteImport } from './routes/admin.imoveis.$id'
+import { Route as AdminImoveisNovoRouteImport } from './routes/admin.imoveis.novo'
 
-const ParceirosRoute = ParceirosRouteImport.update({
-  id: '/parceiros',
-  path: '/parceiros',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ImoveisRoute = ImoveisRouteImport.update({
-  id: '/imoveis',
-  path: '/imoveis',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -37,29 +32,19 @@ const AdminRoute = AdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const ImoveisRoute = ImoveisRouteImport.update({
+  id: '/imoveis',
+  path: '/imoveis',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ImoveisSlugRoute = ImoveisSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => ImoveisRoute,
+const ParceirosRoute = ParceirosRouteImport.update({
+  id: '/parceiros',
+  path: '/parceiros',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AdminPaginaParceirosRoute = AdminPaginaParceirosRouteImport.update({
-  id: '/pagina-parceiros',
-  path: '/pagina-parceiros',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminPaginaImoveisRoute = AdminPaginaImoveisRouteImport.update({
-  id: '/pagina-imoveis',
-  path: '/pagina-imoveis',
-  getParentRoute: () => AdminRoute,
-} as any)
-const AdminLoginRoute = AdminLoginRouteImport.update({
-  id: '/login',
-  path: '/login',
+const AdminImoveisRoute = AdminImoveisRouteImport.update({
+  id: '/imoveis',
+  path: '/imoveis',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLeadsRoute = AdminLeadsRouteImport.update({
@@ -67,19 +52,34 @@ const AdminLeadsRoute = AdminLeadsRouteImport.update({
   path: '/leads',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminImoveisRoute = AdminImoveisRouteImport.update({
-  id: '/imoveis',
-  path: '/imoveis',
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => AdminRoute,
 } as any)
-const AdminImoveisNovoRoute = AdminImoveisNovoRouteImport.update({
-  id: '/novo',
-  path: '/novo',
-  getParentRoute: () => AdminImoveisRoute,
+const AdminPaginaImoveisRoute = AdminPaginaImoveisRouteImport.update({
+  id: '/pagina-imoveis',
+  path: '/pagina-imoveis',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminPaginaParceirosRoute = AdminPaginaParceirosRouteImport.update({
+  id: '/pagina-parceiros',
+  path: '/pagina-parceiros',
+  getParentRoute: () => AdminRoute,
+} as any)
+const ImoveisSlugRoute = ImoveisSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => ImoveisRoute,
 } as any)
 const AdminImoveisIdRoute = AdminImoveisIdRouteImport.update({
   id: '/$id',
   path: '/$id',
+  getParentRoute: () => AdminImoveisRoute,
+} as any)
+const AdminImoveisNovoRoute = AdminImoveisNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
   getParentRoute: () => AdminImoveisRoute,
 } as any)
 
@@ -180,18 +180,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/parceiros': {
-      id: '/parceiros'
-      path: '/parceiros'
-      fullPath: '/parceiros'
-      preLoaderRoute: typeof ParceirosRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/imoveis': {
-      id: '/imoveis'
-      path: '/imoveis'
-      fullPath: '/imoveis'
-      preLoaderRoute: typeof ImoveisRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -201,39 +194,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/imoveis': {
+      id: '/imoveis'
+      path: '/imoveis'
+      fullPath: '/imoveis'
+      preLoaderRoute: typeof ImoveisRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/imoveis/$slug': {
-      id: '/imoveis/$slug'
-      path: '/$slug'
-      fullPath: '/imoveis/$slug'
-      preLoaderRoute: typeof ImoveisSlugRouteImport
-      parentRoute: typeof ImoveisRoute
+    '/parceiros': {
+      id: '/parceiros'
+      path: '/parceiros'
+      fullPath: '/parceiros'
+      preLoaderRoute: typeof ParceirosRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/admin/pagina-parceiros': {
-      id: '/admin/pagina-parceiros'
-      path: '/pagina-parceiros'
-      fullPath: '/admin/pagina-parceiros'
-      preLoaderRoute: typeof AdminPaginaParceirosRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/pagina-imoveis': {
-      id: '/admin/pagina-imoveis'
-      path: '/pagina-imoveis'
-      fullPath: '/admin/pagina-imoveis'
-      preLoaderRoute: typeof AdminPaginaImoveisRouteImport
-      parentRoute: typeof AdminRoute
-    }
-    '/admin/login': {
-      id: '/admin/login'
-      path: '/login'
-      fullPath: '/admin/login'
-      preLoaderRoute: typeof AdminLoginRouteImport
+    '/admin/imoveis': {
+      id: '/admin/imoveis'
+      path: '/imoveis'
+      fullPath: '/admin/imoveis'
+      preLoaderRoute: typeof AdminImoveisRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/leads': {
@@ -243,25 +222,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLeadsRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/imoveis': {
-      id: '/admin/imoveis'
-      path: '/imoveis'
-      fullPath: '/admin/imoveis'
-      preLoaderRoute: typeof AdminImoveisRouteImport
+    '/admin/login': {
+      id: '/admin/login'
+      path: '/login'
+      fullPath: '/admin/login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof AdminRoute
     }
-    '/admin/imoveis/novo': {
-      id: '/admin/imoveis/novo'
-      path: '/novo'
-      fullPath: '/admin/imoveis/novo'
-      preLoaderRoute: typeof AdminImoveisNovoRouteImport
-      parentRoute: typeof AdminImoveisRoute
+    '/admin/pagina-imoveis': {
+      id: '/admin/pagina-imoveis'
+      path: '/pagina-imoveis'
+      fullPath: '/admin/pagina-imoveis'
+      preLoaderRoute: typeof AdminPaginaImoveisRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/pagina-parceiros': {
+      id: '/admin/pagina-parceiros'
+      path: '/pagina-parceiros'
+      fullPath: '/admin/pagina-parceiros'
+      preLoaderRoute: typeof AdminPaginaParceirosRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/imoveis/$slug': {
+      id: '/imoveis/$slug'
+      path: '/$slug'
+      fullPath: '/imoveis/$slug'
+      preLoaderRoute: typeof ImoveisSlugRouteImport
+      parentRoute: typeof ImoveisRoute
     }
     '/admin/imoveis/$id': {
       id: '/admin/imoveis/$id'
       path: '/$id'
       fullPath: '/admin/imoveis/$id'
       preLoaderRoute: typeof AdminImoveisIdRouteImport
+      parentRoute: typeof AdminImoveisRoute
+    }
+    '/admin/imoveis/novo': {
+      id: '/admin/imoveis/novo'
+      path: '/novo'
+      fullPath: '/admin/imoveis/novo'
+      preLoaderRoute: typeof AdminImoveisNovoRouteImport
       parentRoute: typeof AdminImoveisRoute
     }
   }
