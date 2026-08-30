@@ -425,6 +425,52 @@ O SC-023 tinha deixado `/parceiros` com só a **visibilidade** dos blocos editá
 
 ---
 
+### ✅ SC-028 — Destravamento do pipeline (2026-08-30)
+
+Sessão dedicada a executar o Bloco 1 do backlog até onde não depende de painel externo.
+
+| O que | Detalhe |
+|-------|---------|
+| ✅ Árvore verificada | `npx tsc --noEmit` exit 0 · `npm run build` exit 0, gerando `.vercel/output` e **nenhum** `wrangler.json` |
+| ✅ PR #12 aberto | `chore/deps-integration` → `main`, com os 8 commits de agosto + a revisão do backlog. `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`, check `TypeScript` **pass**. Aberto em vez de push direto porque o token `gh` local não tem escopo `workflow` e o merge altera `.github/workflows/deploy.yml` |
+| ✅ Branch protection em `main` | Via API: `required_status_checks` = `TypeScript` com `strict: true`, `enforce_admins: true`, force-push e deleção bloqueados. **Sem** exigência de review aprovado — o repo é de um dono só, exigir revisor travaria o merge |
+| ✅ Secrets do Cloudflare removidos | `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` apagados do GitHub. Restam só `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`. Era mais que higiene: `main` ainda tem o `deploy.yml` do Cloudflare, então um push acidental publicaria no alvo errado — sem os secrets ele apenas falha |
+| ✅ PR #11 avaliado | Ver abaixo |
+| ❌ Migration do SC-027 | Continua bloqueada. Reconfirmado nesta sessão: `mcp__claude_ai_Supabase__list_projects` devolve **só** `studio3dapplication` — o projeto `zeiauwvkfgibysayvhxu` não aparece na conta autorizada |
+
+#### 🔴 Achado — são DOIS projetos Vercel, não um pipeline duplicado
+
+O SC-025 registrou o risco como "integração Git rodando em paralelo com o `deploy.yml`". A realidade é pior. O CI do PR #12 revelou:
+
+| Projeto | ID | Quem publica nele |
+|---------|-----|-------------------|
+| `sc-stays` | `prj_LuXIV3EXAvigGww1ohUdGedTT96R` | A **integração Git nativa**, que está ligada e buildou o PR #12 |
+| `graphic-to-site-glow` | `prj_Sx8L5VmlgEJzm9mY95G3vZadzCEK` | O `deploy.yml`, via `VERCEL_PROJECT_ID` |
+
+Não são dois caminhos para o mesmo site: são **alvos diferentes**. Isso explica por que `graphic-to-site-glow.vercel.app` serve código velho — quem vinha publicando era a integração Git, no outro projeto. Antes de mergear é preciso decidir **qual dos dois é o site de verdade** e desligar o outro; apontar o domínio (Bloco 3) para o projeto errado seria fácil demais.
+
+**Consequência prática para a ordem de merge:** como a integração Git está ativa, mergear o PR #12 **publica** — o `VERCEL_TOKEN` ausente não protege nada. A migration ter de vir antes deixa de ser recomendação e vira pré-requisito.
+
+O preview do PR existe (`sc-stays-git-chore-deps-integration-studio3d.vercel.app`) mas está atrás do Vercel SSO (`302 → vercel.com/sso-api`), então só abre logado — não deu para validar o conteúdo por fora.
+
+#### ✅ PR #11 do Dependabot — avaliado e aprovado (não integrado)
+
+PR aberto em 24/08 com 47 bumps, criado sobre a `main` antiga. Comparado pacote a pacote com a árvore atual: **35 já estavam cobertos** pelo SC-026 e em 4 a nossa árvore está **à frente** (`lucide-react` 1.24 vs 0.575, `zod` 4.4.3 vs 3.24.2, `@vitejs/plugin-react` 6.0.3 vs 5.2.0, `eslint-plugin-react-hooks` 7.1.1 vs 5.2.0 — todos os majors do SC-026).
+
+Sobram **12 bumps reais**, todos minor/patch:
+
+| dependencies | devDependencies |
+|---|---|
+| `@hookform/resolvers` ^5.5.7→^5.9.1 · `@supabase/supabase-js` ^2.111.0→^2.112.3 · `@tanstack/react-router` ^1.170.16→^1.170.31 · `@tanstack/react-start` ^1.168.34→^1.168.48 · `input-otp` ^1.4.2→^1.5.0 · `react-hook-form` ^7.83.0→^7.85.0 · `react-resizable-panels` ^4.6.5→^4.12.3 · `sonner` ^2.0.7→^2.0.8 | `@lovable.dev/vite-tanstack-config` 2.8.3→**2.15.1** · `eslint-plugin-react-refresh` ^0.5.3→^0.5.4 · `typescript-eslint` ^8.65.0→^8.67.0 · `vite` ^8.2.0→^8.2.2 |
+
+Testados num git worktree isolado (não na árvore de trabalho), no mesmo padrão do SC-026: `npm install` → `npm ci` valida o lockfile → `tsc --noEmit` exit 0 → `npm run build` exit 0 → dev server SSR com as 5 rotas públicas em 200 e os 3 imóveis vindos do Supabase → 0 erros no log.
+
+**O bump que merecia atenção era `@lovable.dev/vite-tanstack-config` 2.8.3 → 2.15.1** — 7 minors no pacote que controla o preset do Nitro, do qual o SC-025 depende. Verificado explicitamente: o build segue gerando `.vercel/output` e **não** gera `wrangler.json`, ou seja, o override do preset continua valendo.
+
+Não integrado nesta sessão por escopo (o pedido foi avaliar). Quando for: mesmo caminho do SC-026 — aplicar os 12 no `package.json` e regenerar o lockfile com npm 11.13.0.
+
+---
+
 ### ✅ GitHub — Boas práticas (já implementado)
 
 | O que | Arquivo | Detalhe |
@@ -436,19 +482,19 @@ O SC-023 tinha deixado `/parceiros` com só a **visibilidade** dos blocos editá
 
 ### ⏳ GitHub — Requer ação sua no painel
 
-**Branch protection em `main`** — `Settings → Branches → Add rule`:
-- Branch name: `main`
-- ✅ Require status checks to pass → selecione `TypeScript`
-- ✅ Require branches to be up to date before merging
-- ✅ Do not allow bypassing the above settings
+**Branch protection em `main`** — ✅ **feito no SC-028 (2026-08-30)**, via API em vez do painel. Ativo hoje: check `TypeScript` obrigatório · `strict: true` (branch precisa estar atualizada) · `enforce_admins: true` (sem bypass, nem para o dono) · force-push e deleção bloqueados. Conferir com `gh api repos/btfrantz-hue/SC-Stays/branches/main/protection`.
 
 **Secrets para deploy** — `Settings → Secrets and variables → Actions`. Só as de **build** vão aqui (ver a tabela build vs. runtime no SC-025):
 ```
 VITE_SUPABASE_URL        ✅ cadastrado
 VITE_SUPABASE_ANON_KEY   ✅ cadastrado
 VITE_GA_ID               ⏳ opcional, ativa o GA4
-VERCEL_TOKEN             ⏳ PENDENTE — sem ele o deploy não roda
+VERCEL_TOKEN             ⏳ PENDENTE — sem ele o passo de deploy do workflow falha
+CLOUDFLARE_API_TOKEN     🗑️ removido no SC-028
+CLOUDFLARE_ACCOUNT_ID    🗑️ removido no SC-028
 ```
+
+⚠️ **`VERCEL_TOKEN` ausente não impede a publicação.** A integração Git nativa do Vercel está ligada e publica no projeto `sc-stays` sem passar pelo workflow — ver o achado dos dois projetos no SC-028.
 `SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_USERNAME`, `ADMIN_PASSWORD` e `ADMIN_SESSION_SECRET` **não** vão no GitHub — são de runtime e ficam no painel do Vercel.
 
 ---
@@ -459,12 +505,16 @@ _Reescrito em 2026-08-30, na ordem de dependência real — cada bloco destrava 
 
 ### Bloco 1 — destravar o que já está pronto mas invisível
 
-| # | Item | Quem |
-|---|------|------|
-| 1 | Aplicar `supabase/migrations/sc027_parceiros_content.sql` no SQL Editor (`zeiauwvkfgibysayvhxu`) | **Você** — 2 min |
-| 2 | Mergear `chore/deps-integration` → `main`. Sem isso SC-008/025/026/027 não chegam ao pipeline | Dev |
-| 3 | Cadastrar `VERCEL_TOKEN` em `btfrantz-hue/SC-Stays` → Settings → Secrets → Actions | **Você** |
-| 4 | Desconectar a integração Git nativa no Vercel — pipeline único (mesma armadilha do SC-024) | **Você** |
+**Estado em 2026-08-30 (SC-028): tudo o que não depende de painel externo está feito. O bloco inteiro trava no item 1.**
+
+| # | Item | Quem | Status |
+|---|------|------|--------|
+| 1 | Aplicar `supabase/migrations/sc027_parceiros_content.sql` no SQL Editor (`zeiauwvkfgibysayvhxu`) | **Você** — 2 min | 🔴 **bloqueia 2 e 4** |
+| 2 | Mergear `chore/deps-integration` → `main` | Você mergeia o PR | ⏸️ **PR #12 aberto, CI verde, esperando o item 1** |
+| 3 | Cadastrar `VERCEL_TOKEN` em `btfrantz-hue/SC-Stays` → Settings → Secrets → Actions | **Você** | ⏳ pendente |
+| 4 | **Decidir qual projeto Vercel é o site** (`sc-stays` vs. `graphic-to-site-glow`) e desligar o outro | **Você** | 🔴 pendente — é mais grave do que se pensava, ver SC-028 |
+
+O item 4 mudou de natureza: não é "pipeline duplicado", são **dois projetos Vercel distintos** publicando de caminhos diferentes. Enquanto não for resolvido, mergear o PR #12 publica pela integração Git — por isso o item 1 tem de vir antes.
 
 ### Bloco 2 — conteúdo (só depende de você; todas as telas já existem)
 
@@ -485,13 +535,14 @@ Enquanto o item 9 não acontece, catálogo, admin, captura de leads e SEO existe
 
 ### Bloco 4 — encerramento (não bloqueia o lançamento)
 
-| # | Item | Quem |
-|---|------|------|
-| 10 | Branch protection em `main` (exigir o check `TypeScript`) | **Você** |
-| 11 | `VITE_GA_ID` nos secrets → ativa o GA4 (conta já criada) | **Você** |
-| 12 | OG Image 1200×630 de verdade — o `public/og-image.jpg` atual é cópia byte a byte do `hero-living.jpg` | Designer |
-| 13 | Seção "Quem Somos" em `/parceiros` | Você envia foto/bio → Dev implementa |
-| 14 | Limpeza: remover os secrets do Cloudflare do GitHub e apagar o Worker antigo | **Você** |
-| 15 | Decidir o remote canônico (`scstays` vs. `origin`) e alinhar/arquivar o outro; a branch `homolog` está 27 commits atrás | Dev + você |
+| # | Item | Quem | Status |
+|---|------|------|--------|
+| 10 | Branch protection em `main` (exigir o check `TypeScript`) | Dev | ✅ **feito no SC-028** |
+| 11 | `VITE_GA_ID` nos secrets → ativa o GA4 (conta já criada) | **Você** | ⏳ falta o valor do Measurement ID |
+| 12 | OG Image 1200×630 de verdade — o `public/og-image.jpg` atual é cópia byte a byte do `hero-living.jpg` | Designer | ⏳ |
+| 13 | Seção "Quem Somos" em `/parceiros` | Você envia foto/bio → Dev implementa | ⏳ falta foto e bio |
+| 14 | Limpeza: secrets do Cloudflare no GitHub · apagar o Worker antigo | Dev / **Você** | ✅ secrets removidos no SC-028 · ⏳ Worker ainda existe na Cloudflare |
+| 15 | Decidir o remote canônico (`scstays` vs. `origin`) e alinhar/arquivar o outro; a branch `homolog` está 27 commits atrás | Dev + você | ⏳ |
+| 16 | Integrar os 12 bumps do PR #11 (avaliados e aprovados no SC-028) | Dev | ⏳ testado, não aplicado |
 
 **Já resolvidos, saíram da lista:** secrets de build no GitHub (cadastrados e testados no SC-024/025) · senha forte do admin (trocada) · conta do Google Analytics (criada) · Google Business Profile (criado) · os 5 PRs do Dependabot (SC-026 — testados e integrados em `chore/deps-integration`, **ainda não em `main`**).
